@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="cdf-body">
+  <header class="cdf-header">
+    <h1>Chemin de fer</h1>
+    <div class="cdf-header-actions">
+      <span id="cdf-status" class="cdf-status"></span>
+      <button id="cdf-refresh" class="mod-secondary">Actualiser les cartes</button>
+    </div>
+  </header>
+
+  <div class="cdf-layout">
+    <aside class="cdf-sidebar">
+      <h2>Cartes non placées</h2>
+      <ul id="unassigned-list" class="cdf-card-list" data-spread="unassigned"></ul>
+    </aside>
+
+    <main id="cdf-grid" class="cdf-grid"></main>
+  </div>
+
+  <script src="./js/common.js"></script>
+  <script src="./js/chemin-de-fer.js"></script>
+</body>
+</html>
