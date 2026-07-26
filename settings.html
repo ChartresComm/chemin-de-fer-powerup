@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="settings-body">
+  <form id="settings-form">
+    <label for="template">Modèle de publication</label>
+    <select id="template"></select>
+
+    <div id="custom-fields" style="display:none;">
+      <label for="spreads">Nombre de planches (doubles pages)</label>
+      <input type="number" id="spreads" min="1" max="200">
+
+      <label for="columns">Planches par ligne</label>
+      <input type="number" id="columns" min="1" max="12">
+    </div>
+
+    <button type="submit" class="mod-primary">Enregistrer</button>
+  </form>
+
+  <script src="./js/common.js"></script>
+  <script src="./js/settings.js"></script>
+</body>
+</html>

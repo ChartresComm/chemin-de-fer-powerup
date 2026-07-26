@@ -1,0 +1,21 @@
+{
+  "author": "Chartres métropole",
+  "name": "Chemin de fer",
+  "details": "Organisez visuellement le sommaire de vos publications (chemin de fer / flatplan) directement depuis votre tableau Trello.",
+  "icon": {
+    "url": "./icons/icon-color.svg"
+  },
+  "capabilities": [
+    "board-buttons",
+    "show-settings",
+    "card-badges"
+  ],
+  "connectors": {
+    "iframe": {
+      "url": "./index.html"
+    }
+  },
+  "permissions": {
+    "board": "write"
+  }
+}

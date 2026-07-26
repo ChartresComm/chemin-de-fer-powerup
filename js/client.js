@@ -1,0 +1,54 @@
+// client.js
+// Déclaration des capacités du Power-Up "Chemin de fer" auprès de Trello.
+
+/* global TrelloPowerUp */
+
+var ICON = {
+  dark: './icons/icon-white.svg',
+  light: './icons/icon-color.svg'
+};
+
+TrelloPowerUp.initialize({
+
+  // Bouton dans la barre du tableau -> ouvre la vue chemin de fer en plein écran
+  'board-buttons': function (t, options) {
+    return [{
+      icon: ICON,
+      text: 'Chemin de fer',
+      callback: function (t) {
+        return t.modal({
+          url: './chemin-de-fer.html',
+          fullscreen: true,
+          title: 'Chemin de fer',
+          icon: ICON
+        });
+      }
+    }];
+  },
+
+  // Icône de réglages (roue crantée du Power-Up dans le menu du tableau)
+  'show-settings': function (t, options) {
+    return t.popup({
+      title: 'Réglages du chemin de fer',
+      url: './settings.html',
+      height: 300
+    });
+  },
+
+  // Badge affiché sur la face de chaque carte : n° de planche si elle est placée
+  'card-badges': function (t, options) {
+    return t.card('id').then(function (card) {
+      return cdfGetLayout(t).then(function (layout) {
+        var idx = layout.assignments ? layout.assignments[card.id] : undefined;
+        if (idx === undefined || idx === null) {
+          return [];
+        }
+        return [{
+          text: 'Planche ' + (idx + 1),
+          color: 'blue'
+        }];
+      });
+    });
+  }
+
+});
