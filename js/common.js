@@ -11,7 +11,7 @@ var CDF_HISTORY_KEY = 'cdfHistory';
 // ⚠️ À renseigner : clé API Trello (créée sur https://trello.com/power-ups/admin,
 // onglet "Clé API" de ton Power-Up, ou https://trello.com/app-key).
 // Nécessaire uniquement pour afficher le Statut (champ personnalisé) et les membres.
-var TRELLO_API_KEY = 'COLLE_TA_CLE_API_ICI';
+var TRELLO_API_KEY = '12c05190eef3c7f7179ca3cfc2efacfa';
 
 var CDF_TEMPLATES = {
   'chartres-metropole-60p': {
