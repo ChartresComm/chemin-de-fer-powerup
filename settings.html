@@ -11,12 +11,24 @@
     <select id="template"></select>
 
     <div id="custom-fields" style="display:none;">
-      <label for="spreads">Nombre de planches (doubles pages)</label>
-      <input type="number" id="spreads" min="1" max="200">
+      <label for="totalPages">Nombre total de pages</label>
+      <input type="number" id="totalPages" min="1" max="400">
 
       <label for="columns">Planches par ligne</label>
       <input type="number" id="columns" min="1" max="12">
     </div>
+
+    <label for="startPage">Numéro de la première page (pagination de départ)</label>
+    <input type="number" id="startPage" min="1" max="50">
+
+    <label for="statusFieldName">Nom du champ personnalisé « Statut »</label>
+    <input type="text" id="statusFieldName" placeholder="Statut">
+
+    <label for="archivedListName">Nom de la liste dont les cartes doivent disparaître du chemin de fer</label>
+    <input type="text" id="archivedListName" placeholder="Archivées">
+
+    <label for="editionsListName">Nom de la liste où archiver les éditions (créée si absente)</label>
+    <input type="text" id="editionsListName" placeholder="Éditions">
 
     <button type="submit" class="mod-primary">Enregistrer</button>
   </form>
