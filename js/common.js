@@ -45,10 +45,25 @@ function cdfSaveConfig(t, config) {
 }
 
 function cdfGetLayout(t) {
-  return t.get('board', 'shared', CDF_LAYOUT_KEY, { assignments: {} });
+  return t.get('board', 'shared', CDF_LAYOUT_KEY, { placements: [] }).then(cdfNormalizeLayout);
 }
 function cdfSaveLayout(t, layout) {
   return t.set('board', 'shared', CDF_LAYOUT_KEY, layout);
+}
+
+// Convertit l'ancien format ({ assignments: { cardId: "cell|zone" } }, un seul
+// emplacement par carte) vers le nouveau format ({ placements: [{ id, loc }] },
+// plusieurs emplacements possibles par carte — pour dupliquer une carte sur
+// plusieurs planches, ou l'étaler sur plusieurs doubles-pages).
+function cdfNormalizeLayout(layout) {
+  if (layout && Array.isArray(layout.placements)) return layout;
+  var placements = [];
+  if (layout && layout.assignments) {
+    Object.keys(layout.assignments).forEach(function (cardId) {
+      placements.push({ id: cardId, loc: String(layout.assignments[cardId]) });
+    });
+  }
+  return { placements: placements };
 }
 
 function cdfGetRubriques(t) {
@@ -85,18 +100,26 @@ function cdfSaveIssueSnapshot(t, issueId, snapshot) {
 }
 
 // Calcule la liste des cellules de la grille : page 1 seule (couverture),
-// puis pages accolées par paires ("p.2-3", "p.4-5"...).
+// puis pages accolées par paires ("p.2-3", "p.4-5"...), et la dernière page
+// (4e de couverture) toujours seule elle aussi.
 function cdfComputeCells(config) {
   var startPage = config.startPage || 1;
-  var totalPages = config.totalPages || 20;
+  var totalPages = Math.max(config.totalPages || 20, 1);
   var lastPage = startPage + totalPages - 1;
   var cells = [];
 
+  // 1ère de couverture : toujours seule
   cells.push({ pages: [startPage], label: 'p.' + startPage });
+  if (totalPages === 1) return cells;
 
-  var page = startPage + 1;
-  while (page <= lastPage) {
-    var remaining = lastPage - page + 1;
+  // 4e de couverture (dernière page) : toujours seule aussi, sauf s'il n'y a
+  // que 2 pages au total (alors il n'y a pas de "milieu").
+  var middleStart = startPage + 1;
+  var middleEnd = lastPage - 1;
+
+  var page = middleStart;
+  while (page <= middleEnd) {
+    var remaining = middleEnd - page + 1;
     if (remaining >= 2) {
       cells.push({ pages: [page, page + 1], label: 'p.' + page + '-' + (page + 1) });
       page += 2;
@@ -105,6 +128,11 @@ function cdfComputeCells(config) {
       page += 1;
     }
   }
+
+  if (lastPage > startPage) {
+    cells.push({ pages: [lastPage], label: 'p.' + lastPage });
+  }
+
   return cells;
 }
 

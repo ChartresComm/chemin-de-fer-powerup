@@ -36,28 +36,31 @@ TrelloPowerUp.initialize({
   },
 
   // Badge affiché sur la face de chaque carte : numéro(s) de page si elle est placée
+  // (plusieurs emplacements possibles si la carte est dupliquée / étalée sur plusieurs planches)
   'card-badges': function (t, options) {
     return t.card('id').then(function (card) {
       return Promise.all([cdfGetLayout(t), cdfGetConfig(t)]).then(function (res) {
         var layout = res[0];
         var config = res[1];
-        var key = layout.assignments ? layout.assignments[card.id] : undefined;
-        if (!key) return [];
-
-        var parts = key.split('|');
-        var cellIdx = parseInt(parts[0], 10);
-        var zone = parts[1];
         var cells = cdfComputeCells(config);
-        var cell = cells[cellIdx];
-        if (!cell) return [];
 
-        var text;
-        if (zone === 'left') text = 'P.' + cell.pages[0];
-        else if (zone === 'right') text = 'P.' + cell.pages[1];
-        else if (zone === 'both') text = 'P.' + cell.pages[0] + '-' + cell.pages[1];
-        else text = 'P.' + cell.pages[0];
+        var texts = (layout.placements || [])
+          .filter(function (p) { return p.id === card.id && p.loc !== 'unassigned'; })
+          .map(function (p) {
+            var parts = p.loc.split('|');
+            var cellIdx = parseInt(parts[0], 10);
+            var zone = parts[1];
+            var cell = cells[cellIdx];
+            if (!cell) return null;
+            if (zone === 'left') return 'P.' + cell.pages[0];
+            if (zone === 'right') return 'P.' + cell.pages[1];
+            if (zone === 'both') return 'P.' + cell.pages[0] + '-' + cell.pages[1];
+            return 'P.' + cell.pages[0];
+          })
+          .filter(Boolean);
 
-        return [{ text: text, color: 'blue' }];
+        if (!texts.length) return [];
+        return [{ text: texts.join(' + '), color: 'blue' }];
       });
     });
   }

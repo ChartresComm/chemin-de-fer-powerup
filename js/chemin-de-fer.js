@@ -64,14 +64,34 @@ function cardLabelDots(card) {
   }).join('');
 }
 
-function renderCardEl(card) {
+function renderCardEl(card, interactive) {
   var li = document.createElement('li');
   li.className = 'cdf-card';
   li.setAttribute('data-id', card.id);
   li.innerHTML =
     '<div class="cdf-card-labels">' + cardLabelDots(card) + '</div>' +
     '<div class="cdf-card-name">' + escapeHtml(card.name) + '</div>';
+
+  if (interactive) {
+    var dupBtn = document.createElement('button');
+    dupBtn.type = 'button';
+    dupBtn.className = 'cdf-card-duplicate-btn';
+    dupBtn.title = 'Dupliquer cette carte : pour l’étaler sur une autre planche, ou créer un miroir identique (même contenu partout)';
+    dupBtn.textContent = '⧉';
+    dupBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      duplicateCard(card);
+    });
+    li.appendChild(dupBtn);
+  }
+
   return li;
+}
+
+function duplicateCard(card) {
+  unassignedListEl.appendChild(renderCardEl(card, true));
+  saveLayoutFromDom();
+  setStatus('Copie créée — glisse-la sur la planche voulue');
 }
 
 // --- Construction générique d'une grille (utilisée pour la vue live ET l'historique figé) ---
@@ -162,17 +182,24 @@ function buildGridInto(container, config, rubriques, interactive) {
   return cells;
 }
 
-function renderCardsInto(container, cells, layout, cards, unassignedContainer) {
+function renderCardsInto(container, cells, layout, cards, unassignedContainer, interactive) {
   if (unassignedContainer) unassignedContainer.innerHTML = '';
   container.querySelectorAll('.cdf-card-list').forEach(function (ul) { ul.innerHTML = ''; });
 
-  var assignments = (layout && layout.assignments) || {};
-  cards.forEach(function (card) {
-    var key = assignments[card.id];
-    var targetList = null;
+  var cardsById = {};
+  cards.forEach(function (c) { cardsById[c.id] = c; });
 
-    if (key) {
-      var parts = String(key).split('|');
+  var placements = (layout && layout.placements) || [];
+  var placedIds = {};
+
+  placements.forEach(function (p) {
+    var card = cardsById[p.id];
+    if (!card) return; // carte introuvable (supprimée/archivée entre-temps)
+    placedIds[p.id] = true;
+
+    var targetList = null;
+    if (p.loc && p.loc !== 'unassigned') {
+      var parts = String(p.loc).split('|');
       var cellIdx = parseInt(parts[0], 10);
       var zone = parts[1];
       if (cellIdx >= 0 && cellIdx < cells.length) {
@@ -180,8 +207,17 @@ function renderCardsInto(container, cells, layout, cards, unassignedContainer) {
       }
     }
     if (!targetList) targetList = unassignedContainer;
-    if (targetList) targetList.appendChild(renderCardEl(card));
+    if (targetList) targetList.appendChild(renderCardEl(card, interactive));
   });
+
+  // Cartes sans le moindre emplacement enregistré : apparaissent par défaut en "non placées"
+  if (unassignedContainer) {
+    cards.forEach(function (card) {
+      if (!placedIds[card.id]) {
+        unassignedContainer.appendChild(renderCardEl(card, interactive));
+      }
+    });
+  }
 }
 
 // --- Vue live ---
@@ -198,7 +234,7 @@ function buildGrid() {
 }
 
 function renderCards() {
-  renderCardsInto(gridEl, currentCells, currentLayout, currentCards, unassignedListEl);
+  renderCardsInto(gridEl, currentCells, currentLayout, currentCards, unassignedListEl, true);
 }
 
 function initSortable() {
@@ -213,15 +249,16 @@ function initSortable() {
 }
 
 function saveLayoutFromDom() {
-  var assignments = {};
-  gridEl.querySelectorAll('.cdf-card-list').forEach(function (ul) {
-    var cellIdx = ul.getAttribute('data-cell');
-    var zone = ul.getAttribute('data-zone');
+  var placements = [];
+  document.querySelectorAll('#cdf-grid .cdf-card-list, #unassigned-list').forEach(function (ul) {
+    var loc = (ul.id === 'unassigned-list')
+      ? 'unassigned'
+      : (ul.getAttribute('data-cell') + '|' + ul.getAttribute('data-zone'));
     ul.querySelectorAll('.cdf-card').forEach(function (li) {
-      assignments[li.getAttribute('data-id')] = cellIdx + '|' + zone;
+      placements.push({ id: li.getAttribute('data-id'), loc: loc });
     });
   });
-  currentLayout = { assignments: assignments };
+  currentLayout = { placements: placements };
   cdfSaveLayout(t, currentLayout).then(function () {
     setStatus('Enregistré');
   }).catch(function () {
@@ -421,9 +458,12 @@ function archiveCurrentAndReset(newTitle, base) {
   }).then(function () {
     if (base === 'scratch') {
       currentConfig = JSON.parse(JSON.stringify(CDF_DEFAULT_CONFIG));
+      currentRubriques = {};
     }
+    // si base === 'template' : la pagination (currentConfig) ET les rubriques
+    // (titres + couleurs) sont conservées telles quelles, seule la disposition
+    // des cartes (currentLayout) est remise à zéro pour le nouveau numéro.
     currentLayout = { assignments: {} };
-    currentRubriques = {};
     currentMeta = { title: newTitle, closingDate: '', distributionDate: '' };
 
     return Promise.all([
@@ -520,7 +560,7 @@ function showHistoryDetail(entry) {
     });
 
     var cells = buildGridInto(historyDetailGrid, snapshot.config, snapshot.rubriques || {}, false);
-    renderCardsInto(historyDetailGrid, cells, snapshot.layout, cardsForRender, null);
+    renderCardsInto(historyDetailGrid, cells, cdfNormalizeLayout(snapshot.layout || {}), cardsForRender, null, false);
   });
 }
 
