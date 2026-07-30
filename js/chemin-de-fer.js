@@ -97,6 +97,17 @@ function renderCardEl(card, interactive) {
       duplicateCard(card);
     });
     li.appendChild(dupBtn);
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'cdf-card-remove-btn';
+    delBtn.title = 'Retirer cet exemplaire de la planche (renvoie en "non placées" si c’est le dernier)';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      removeCardInstance(li);
+    });
+    li.appendChild(delBtn);
   }
 
   return li;
@@ -106,6 +117,25 @@ function duplicateCard(card) {
   unassignedListEl.appendChild(renderCardEl(card, true));
   saveLayoutFromDom();
   setStatus('Copie créée — glisse-la sur la planche voulue');
+}
+
+function removeCardInstance(li) {
+  var cardId = li.getAttribute('data-id');
+  var totalInstances = document.querySelectorAll(
+    '#cdf-grid .cdf-card[data-id="' + cardId + '"], #unassigned-list .cdf-card[data-id="' + cardId + '"]'
+  ).length;
+
+  if (totalInstances > 1) {
+    li.remove();
+    setStatus('Exemplaire retiré');
+  } else if (li.parentElement !== unassignedListEl) {
+    unassignedListEl.appendChild(li);
+    setStatus('Carte renvoyée en "non placées"');
+  } else {
+    setStatus('Déjà en "non placées"');
+    return; // rien n'a changé, pas besoin de sauvegarder
+  }
+  saveLayoutFromDom();
 }
 
 // --- Construction générique d'une grille (utilisée pour la vue live ET l'historique figé) ---
