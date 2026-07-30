@@ -98,6 +98,11 @@ function cdfGetIssueSnapshot(t, issueId) {
 function cdfSaveIssueSnapshot(t, issueId, snapshot) {
   return t.set('board', 'shared', 'cdfIssue_' + issueId, snapshot);
 }
+function cdfRemoveIssueSnapshot(t, issueId) {
+  return t.remove('board', 'shared', 'cdfIssue_' + issueId).catch(function () {
+    // pas grave si la clé n'existait déjà plus
+  });
+}
 
 // Calcule la liste des cellules de la grille : page 1 seule (couverture),
 // puis pages accolées par paires ("p.2-3", "p.4-5"...), et la dernière page

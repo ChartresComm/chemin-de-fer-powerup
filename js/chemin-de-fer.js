@@ -28,6 +28,7 @@ var historyListView = document.getElementById('cdf-history-list-view');
 var historyDetailView = document.getElementById('cdf-history-detail-view');
 var historyListEl = document.getElementById('cdf-history-list');
 var historyCloseBtn = document.getElementById('cdf-history-close');
+var historyClearBtn = document.getElementById('cdf-history-clear');
 var historyBackBtn = document.getElementById('cdf-history-back');
 var historyDetailTitle = document.getElementById('cdf-history-detail-title');
 var historyDetailDates = document.getElementById('cdf-history-detail-dates');
@@ -573,6 +574,26 @@ historyBtn.addEventListener('click', function () {
 
 historyCloseBtn.addEventListener('click', function () {
   historyOverlay.classList.remove('cdf-overlay-visible');
+});
+
+historyClearBtn.addEventListener('click', function () {
+  if (!currentHistory.length) return;
+  var confirmed = window.confirm('Supprimer définitivement tout l’historique des ' + currentHistory.length + ' chemin(s) de fer archivé(s) ? Cette action est irréversible.');
+  if (!confirmed) return;
+
+  var toDelete = currentHistory.slice();
+  Promise.all(toDelete.map(function (entry) {
+    return cdfRemoveIssueSnapshot(t, entry.id);
+  })).then(function () {
+    currentHistory = [];
+    return cdfSaveHistory(t, currentHistory);
+  }).then(function () {
+    renderHistoryList();
+    setStatus('Historique supprimé');
+  }).catch(function (err) {
+    console.error(err);
+    setStatus('Erreur lors de la suppression');
+  });
 });
 
 historyBackBtn.addEventListener('click', function () {
