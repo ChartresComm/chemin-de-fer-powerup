@@ -253,7 +253,12 @@ distributionDateInput.addEventListener('change', saveMetaFromInputs);
 function loadCards() {
   return t.lists('id', 'name').catch(function () { return []; }).then(function (lists) {
     var normalize = function (s) {
-      return (s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      s = (s || '').trim().toLowerCase();
+      try {
+        return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      } catch (e) {
+        return s; // repli si normalize()/Unicode property escapes indisponibles dans ce contexte
+      }
     };
     var targetName = normalize(currentConfig.archivedListName || 'Archivées');
     var archivedIds = lists.filter(function (l) {
@@ -264,6 +269,13 @@ function loadCards() {
       currentCards = cards.filter(function (c) {
         return !c.closed && archivedIds.indexOf(c.idList) === -1;
       });
+    });
+  }).catch(function (err) {
+    // Filet de secours : même en cas de souci imprévu, on affiche au moins
+    // toutes les cartes non archivées plutôt que de bloquer toute la vue.
+    console.error('loadCards error, repli sur t.cards() simple :', err);
+    return t.cards('id', 'name', 'labels', 'closed').then(function (cards) {
+      currentCards = cards.filter(function (c) { return !c.closed; });
     });
   });
 }
@@ -287,6 +299,9 @@ function init() {
     return loadCards();
   }).then(function () {
     fullRender();
+  }).catch(function (err) {
+    console.error('Erreur au chargement du chemin de fer :', err);
+    setStatus('Erreur au chargement — voir la console');
   });
 }
 
@@ -295,6 +310,9 @@ refreshBtn.addEventListener('click', function () {
     renderCards();
     initSortable();
     setStatus('Cartes actualisées');
+  }).catch(function (err) {
+    console.error(err);
+    setStatus('Erreur au chargement des cartes');
   });
 });
 
