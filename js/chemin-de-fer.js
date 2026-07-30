@@ -8,6 +8,7 @@ var gridEl = document.getElementById('cdf-grid');
 var unassignedListEl = document.getElementById('unassigned-list');
 var statusEl = document.getElementById('cdf-status');
 var refreshBtn = document.getElementById('cdf-refresh');
+var settingsBtn = document.getElementById('cdf-settings');
 var exportBtn = document.getElementById('cdf-export');
 
 var titleInput = document.getElementById('cdf-title');
@@ -342,6 +343,21 @@ function init() {
     setStatus('Erreur au chargement — voir la console');
   });
 }
+
+settingsBtn.addEventListener('click', function () {
+  t.popup({
+    title: 'Réglages du chemin de fer',
+    url: './settings.html',
+    height: 400
+  }).then(function () {
+    return cdfGetConfig(t);
+  }).then(function (config) {
+    currentConfig = config;
+    return loadCards();
+  }).then(function () {
+    fullRender();
+  });
+});
 
 refreshBtn.addEventListener('click', function () {
   loadCards().then(function () {
