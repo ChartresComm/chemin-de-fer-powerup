@@ -11,11 +11,11 @@ var ICON = {
 TrelloPowerUp.initialize({
 
   // Bouton dans la barre du tableau -> ouvre la vue chemin de fer en plein écran
-  // (texte volontairement très court pour ne jamais être tronqué dans la barre)
+  // (icône seule : même un texte très court ("CDF") se faisait tronquer, l'espace
+  // disponible dans la barre est trop réduit pour afficher du texte de toute façon)
   'board-buttons': function (t, options) {
     return [{
       icon: ICON,
-      text: 'CDF',
       callback: function (t) {
         return t.modal({
           url: './chemin-de-fer.html',
