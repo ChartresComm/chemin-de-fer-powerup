@@ -75,13 +75,13 @@ function renderCardEl(card, interactive) {
   var nameEl = document.createElement('div');
   nameEl.className = 'cdf-card-name';
   nameEl.textContent = card.name;
-  if (card.shortUrl) {
+  if (card.url) {
     nameEl.classList.add('cdf-card-name-link');
     nameEl.title = 'Ouvrir la carte dans Trello';
     nameEl.addEventListener('mousedown', function (e) { e.stopPropagation(); });
     nameEl.addEventListener('click', function (e) {
       e.stopPropagation();
-      window.open(card.shortUrl, '_blank', 'noopener');
+      window.open(card.url, '_blank', 'noopener');
     });
   }
   li.appendChild(nameEl);
@@ -316,7 +316,7 @@ function loadCards() {
       return normalize(l.name) === targetName;
     }).map(function (l) { return l.id; });
 
-    return t.cards('id', 'name', 'labels', 'closed', 'idList', 'shortUrl').then(function (cards) {
+    return t.cards('id', 'name', 'labels', 'closed', 'idList', 'url').then(function (cards) {
       currentCards = cards.filter(function (c) {
         return !c.closed && archivedIds.indexOf(c.idList) === -1;
       });
@@ -325,7 +325,7 @@ function loadCards() {
     // Filet de secours : même en cas de souci imprévu, on affiche au moins
     // toutes les cartes non archivées plutôt que de bloquer toute la vue.
     console.error('loadCards error, repli sur t.cards() simple :', err);
-    return t.cards('id', 'name', 'labels', 'closed', 'shortUrl').then(function (cards) {
+    return t.cards('id', 'name', 'labels', 'closed', 'url').then(function (cards) {
       currentCards = cards.filter(function (c) { return !c.closed; });
     });
   });
