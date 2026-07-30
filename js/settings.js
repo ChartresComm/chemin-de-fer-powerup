@@ -5,7 +5,6 @@
 var t = TrelloPowerUp.iframe();
 
 var templateSelect = document.getElementById('template');
-var customFields = document.getElementById('custom-fields');
 var totalPagesInput = document.getElementById('totalPages');
 var columnsInput = document.getElementById('columns');
 var startPageInput = document.getElementById('startPage');
@@ -19,17 +18,12 @@ Object.keys(CDF_TEMPLATES).forEach(function (key) {
   templateSelect.appendChild(opt);
 });
 
-function updateCustomVisibility() {
-  customFields.style.display = templateSelect.value === 'custom' ? 'block' : 'none';
-}
-
+// Choisir un modèle préremplit juste les champs ci-dessous, qui restent
+// modifiables librement ensuite quel que soit le modèle sélectionné.
 templateSelect.addEventListener('change', function () {
   var tpl = CDF_TEMPLATES[templateSelect.value];
-  if (templateSelect.value !== 'custom') {
-    totalPagesInput.value = tpl.totalPages;
-    columnsInput.value = tpl.columns;
-  }
-  updateCustomVisibility();
+  totalPagesInput.value = tpl.totalPages;
+  columnsInput.value = tpl.columns;
 });
 
 cdfGetConfig(t).then(function (config) {
@@ -38,7 +32,6 @@ cdfGetConfig(t).then(function (config) {
   columnsInput.value = config.columns;
   startPageInput.value = config.startPage || 1;
   archivedListNameInput.value = config.archivedListName || 'Archivées';
-  updateCustomVisibility();
   t.sizeTo('#settings-form');
 });
 
