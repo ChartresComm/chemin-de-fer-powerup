@@ -6,6 +6,7 @@ var t = TrelloPowerUp.iframe();
 
 var gridEl = document.getElementById('cdf-grid');
 var unassignedListEl = document.getElementById('unassigned-list');
+var labelFilterSelect = document.getElementById('cdf-label-filter');
 var statusEl = document.getElementById('cdf-status');
 var refreshBtn = document.getElementById('cdf-refresh');
 var settingsBtn = document.getElementById('cdf-settings');
@@ -70,6 +71,8 @@ function renderCardEl(card, interactive) {
   var li = document.createElement('li');
   li.className = 'cdf-card';
   li.setAttribute('data-id', card.id);
+  var labelNames = (card.labels || []).map(function (l) { return (l.name || '').toLowerCase(); }).filter(Boolean);
+  li.setAttribute('data-labels', labelNames.join('|'));
   li.innerHTML = '<div class="cdf-card-labels">' + cardLabelDots(card) + '</div>';
 
   var nameEl = document.createElement('div');
@@ -115,6 +118,8 @@ function renderCardEl(card, interactive) {
 
 function duplicateCard(card) {
   unassignedListEl.appendChild(renderCardEl(card, true));
+  sortUnassignedByLabel();
+  applyLabelFilter();
   saveLayoutFromDom();
   setStatus('Copie créée — glisse-la sur la planche voulue');
 }
@@ -130,6 +135,8 @@ function removeCardInstance(li) {
     setStatus('Exemplaire retiré');
   } else if (li.parentElement !== unassignedListEl) {
     unassignedListEl.appendChild(li);
+    sortUnassignedByLabel();
+    applyLabelFilter();
     setStatus('Carte renvoyée en "non placées"');
   } else {
     setStatus('Déjà en "non placées"');
@@ -279,7 +286,55 @@ function buildGrid() {
 
 function renderCards() {
   renderCardsInto(gridEl, currentCells, currentLayout, currentCards, unassignedListEl, true);
+  sortUnassignedByLabel();
+  populateLabelFilter();
+  applyLabelFilter();
 }
+
+// Trie la liste "Cartes non placées" par nom de première étiquette (alphabétique,
+// insensible à la casse) ; les cartes sans étiquette passent en dernier.
+function sortUnassignedByLabel() {
+  var items = Array.prototype.slice.call(unassignedListEl.querySelectorAll('.cdf-card'));
+  items.sort(function (a, b) {
+    var la = (a.getAttribute('data-labels') || '').split('|')[0] || '';
+    var lb = (b.getAttribute('data-labels') || '').split('|')[0] || '';
+    if (!la && lb) return 1;
+    if (la && !lb) return -1;
+    return la.localeCompare(lb);
+  });
+  items.forEach(function (li) { unassignedListEl.appendChild(li); });
+}
+
+// Reconstruit la liste déroulante des étiquettes disponibles, en conservant
+// la sélection en cours si elle est toujours valide.
+function populateLabelFilter() {
+  var names = {};
+  currentCards.forEach(function (c) {
+    (c.labels || []).forEach(function (l) {
+      if (l.name) names[l.name] = true;
+    });
+  });
+  var previous = labelFilterSelect.value;
+  labelFilterSelect.innerHTML = '<option value="">Toutes les étiquettes</option>';
+  Object.keys(names).sort(function (a, b) { return a.localeCompare(b); }).forEach(function (name) {
+    var opt = document.createElement('option');
+    opt.value = name.toLowerCase();
+    opt.textContent = name;
+    labelFilterSelect.appendChild(opt);
+  });
+  labelFilterSelect.value = previous;
+}
+
+// Masque dans "Cartes non placées" celles qui ne portent pas l'étiquette choisie.
+function applyLabelFilter() {
+  var val = labelFilterSelect.value;
+  unassignedListEl.querySelectorAll('.cdf-card').forEach(function (li) {
+    var labels = (li.getAttribute('data-labels') || '').split('|');
+    li.style.display = (!val || labels.indexOf(val) !== -1) ? '' : 'none';
+  });
+}
+
+labelFilterSelect.addEventListener('change', applyLabelFilter);
 
 function initSortable() {
   document.querySelectorAll('#cdf-grid .cdf-card-list, #unassigned-list').forEach(function (ul) {
@@ -303,6 +358,8 @@ function saveLayoutFromDom() {
     });
   });
   currentLayout = { placements: placements };
+  sortUnassignedByLabel();
+  applyLabelFilter();
   cdfSaveLayout(t, currentLayout).then(function () {
     setStatus('Enregistré');
   }).catch(function () {
