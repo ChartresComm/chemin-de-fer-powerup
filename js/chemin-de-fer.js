@@ -70,9 +70,21 @@ function renderCardEl(card, interactive) {
   var li = document.createElement('li');
   li.className = 'cdf-card';
   li.setAttribute('data-id', card.id);
-  li.innerHTML =
-    '<div class="cdf-card-labels">' + cardLabelDots(card) + '</div>' +
-    '<div class="cdf-card-name">' + escapeHtml(card.name) + '</div>';
+  li.innerHTML = '<div class="cdf-card-labels">' + cardLabelDots(card) + '</div>';
+
+  var nameEl = document.createElement('div');
+  nameEl.className = 'cdf-card-name';
+  nameEl.textContent = card.name;
+  if (card.shortUrl) {
+    nameEl.classList.add('cdf-card-name-link');
+    nameEl.title = 'Ouvrir la carte dans Trello';
+    nameEl.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+    nameEl.addEventListener('click', function (e) {
+      e.stopPropagation();
+      window.open(card.shortUrl, '_blank', 'noopener');
+    });
+  }
+  li.appendChild(nameEl);
 
   if (interactive) {
     var dupBtn = document.createElement('button');
@@ -304,7 +316,7 @@ function loadCards() {
       return normalize(l.name) === targetName;
     }).map(function (l) { return l.id; });
 
-    return t.cards('id', 'name', 'labels', 'closed', 'idList').then(function (cards) {
+    return t.cards('id', 'name', 'labels', 'closed', 'idList', 'shortUrl').then(function (cards) {
       currentCards = cards.filter(function (c) {
         return !c.closed && archivedIds.indexOf(c.idList) === -1;
       });
@@ -313,7 +325,7 @@ function loadCards() {
     // Filet de secours : même en cas de souci imprévu, on affiche au moins
     // toutes les cartes non archivées plutôt que de bloquer toute la vue.
     console.error('loadCards error, repli sur t.cards() simple :', err);
-    return t.cards('id', 'name', 'labels', 'closed').then(function (cards) {
+    return t.cards('id', 'name', 'labels', 'closed', 'shortUrl').then(function (cards) {
       currentCards = cards.filter(function (c) { return !c.closed; });
     });
   });
@@ -350,12 +362,17 @@ settingsBtn.addEventListener('click', function () {
     url: './settings.html',
     height: 400
   }).then(function () {
+    // Léger délai : après la fermeture de la popup, le stockage Trello met parfois
+    // un court instant à propager la dernière écriture entre les deux iframes.
+    return new Promise(function (resolve) { setTimeout(resolve, 400); });
+  }).then(function () {
     return cdfGetConfig(t);
   }).then(function (config) {
     currentConfig = config;
     return loadCards();
   }).then(function () {
     fullRender();
+    setStatus('Réglages appliqués');
   });
 });
 
