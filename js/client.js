@@ -5,19 +5,18 @@
 
 var ICON = {
   dark: './icons/icon-white-32.png',
-  light: './icons/icon-color-32.png'
+  light: './icons/icon-black-32.png'
 };
 
 TrelloPowerUp.initialize({
 
   // Bouton dans la barre du tableau -> ouvre la vue chemin de fer en plein écran
-  // Le texte est nécessaire (sans lui, Trello n'affiche pas le bouton du tout,
-  // confirmé en conditions réelles). Sa taille/police est fixée par Trello lui-même,
-  // aucun moyen de la modifier depuis le Power-Up.
+  // Nouvel essai sans texte (icône noire) maintenant que la vraie cause du bouton
+  // manquant a été identifiée : la capacité board-buttons n'était pas activée
+  // dans l'admin Trello, pas un problème de code.
   'board-buttons': function (t, options) {
     return [{
       icon: ICON,
-      text: 'CDF',
       callback: function (t) {
         return t.modal({
           url: './chemin-de-fer.html',
