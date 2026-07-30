@@ -11,12 +11,13 @@ var ICON = {
 TrelloPowerUp.initialize({
 
   // Bouton dans la barre du tableau -> ouvre la vue chemin de fer en plein écran
-  // (icône seule, sans texte : à tester en conditions réelles avec un rechargement
-  // complet + réactivation du Power-Up, car un précédent essai avait semblé faire
-  // disparaître le bouton, ce qui pourrait aussi avoir été un problème de cache)
+  // Le texte est nécessaire (sans lui, Trello n'affiche pas le bouton du tout,
+  // confirmé en conditions réelles). Sa taille/police est fixée par Trello lui-même,
+  // aucun moyen de la modifier depuis le Power-Up.
   'board-buttons': function (t, options) {
     return [{
       icon: ICON,
+      text: 'CDF',
       callback: function (t) {
         return t.modal({
           url: './chemin-de-fer.html',
