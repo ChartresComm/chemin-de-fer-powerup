@@ -53,6 +53,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
   padding: 12px 20px;
   background: white;
   border-bottom: 1px solid #dfe1e6;
@@ -60,14 +62,43 @@ body {
   top: 0;
   z-index: 10;
 }
-.cdf-header h1 {
-  font-size: 18px;
-  margin: 0;
+.cdf-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cdf-title-input {
+  font-size: 16px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 4px 6px;
+  min-width: 260px;
+}
+.cdf-title-input:hover,
+.cdf-title-input:focus {
+  border-color: #dfe1e6;
+  outline: none;
+}
+.cdf-date-label {
+  font-size: 11px;
+  color: #5e6c84;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cdf-date-label input {
+  border: 1px solid #dfe1e6;
+  border-radius: 3px;
+  padding: 3px 5px;
+  font-size: 12px;
 }
 .cdf-header-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .cdf-status {
   font-size: 12px;
@@ -110,7 +141,7 @@ body {
   border: 1px solid #dfe1e6;
   border-radius: 5px;
   padding: 8px;
-  min-height: 120px;
+  min-height: 160px;
   display: flex;
   flex-direction: column;
 }
@@ -120,6 +151,104 @@ body {
   color: #5e6c84;
   text-transform: uppercase;
   margin-bottom: 6px;
+}
+
+/* Bandeau rubrique : titre éditable + pastille de couleur */
+.cdf-rubrique {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin-bottom: 6px;
+}
+.cdf-cell-pagelabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #5e6c84;
+  flex: 0 0 auto;
+}
+.cdf-rubrique-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 16px;
+  outline: none;
+  cursor: text;
+}
+.cdf-rubrique-title:empty:before {
+  content: attr(data-placeholder);
+  color: #97a0af;
+  font-weight: 400;
+}
+.cdf-rubrique-color {
+  width: 18px;
+  height: 18px;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+/* Pages accolées : page 1 seule, sinon paire jointe */
+.cdf-pages-row {
+  display: flex;
+  margin-bottom: 6px;
+}
+.cdf-page-box {
+  flex: 1;
+  background: #fafbfc;
+  border: 1px solid #dfe1e6;
+  font-size: 10px;
+  color: #97a0af;
+  text-align: center;
+  padding: 3px 0;
+}
+.cdf-pages-pair .cdf-page-box:first-child {
+  border-right: none;
+  border-radius: 3px 0 0 3px;
+}
+.cdf-pages-pair .cdf-page-box:last-child {
+  border-radius: 0 3px 3px 0;
+}
+.cdf-pages-single .cdf-page-box {
+  border-radius: 3px;
+  max-width: 60px;
+}
+
+/* Statut (champ personnalisé) */
+.cdf-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.cdf-status-pill {
+  font-size: 10px;
+  font-weight: 600;
+  color: #172b4d;
+  border-radius: 8px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+/* Membres */
+.cdf-card-members {
+  margin-top: 4px;
+  display: flex;
+  gap: 3px;
+}
+.cdf-member-chip {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cdf-card-list {
@@ -155,4 +284,93 @@ body {
 }
 .cdf-card-name {
   line-height: 1.3;
+}
+
+/* Dialogues modaux (nouveau chemin de fer / historique) */
+.cdf-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(9, 30, 66, 0.54);
+  z-index: 100;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+.cdf-overlay-visible {
+  display: flex;
+}
+.cdf-overlay-box {
+  background: white;
+  border-radius: 6px;
+  padding: 20px 24px;
+  width: 420px;
+  max-width: 100%;
+}
+.cdf-overlay-box-wide {
+  width: 900px;
+}
+.cdf-overlay-box h3 {
+  margin-top: 0;
+}
+.cdf-overlay-hint {
+  font-size: 12px;
+  color: #5e6c84;
+}
+.cdf-overlay-box label {
+  display: block;
+  font-weight: 600;
+  font-size: 12px;
+  margin: 12px 0 4px;
+  text-transform: uppercase;
+  color: #5e6c84;
+}
+.cdf-overlay-box input,
+.cdf-overlay-box select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid #dfe1e6;
+  border-radius: 3px;
+  font-size: 14px;
+}
+.cdf-overlay-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Historique */
+.cdf-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.cdf-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px;
+  border-bottom: 1px solid #eef0f3;
+}
+.cdf-history-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cdf-history-item-info span {
+  font-size: 12px;
+  color: #5e6c84;
+}
+.cdf-history-empty {
+  color: #5e6c84;
+  font-size: 13px;
+  padding: 10px 4px;
+}
+.cdf-grid-readonly .cdf-card {
+  cursor: default;
 }
