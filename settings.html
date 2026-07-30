@@ -7,16 +7,14 @@
 </head>
 <body class="settings-body">
   <form id="settings-form">
-    <label for="template">Modèle de publication</label>
+    <label for="template">Modèle de publication (préremplit les champs ci-dessous, modifiables ensuite librement)</label>
     <select id="template"></select>
 
-    <div id="custom-fields" style="display:none;">
-      <label for="totalPages">Nombre total de pages</label>
-      <input type="number" id="totalPages" min="2" max="200">
+    <label for="totalPages">Nombre total de pages</label>
+    <input type="number" id="totalPages" min="2" max="200">
 
-      <label for="columns">Planches par ligne</label>
-      <input type="number" id="columns" min="1" max="12">
-    </div>
+    <label for="columns">Planches par ligne</label>
+    <input type="number" id="columns" min="1" max="12">
 
     <label for="startPage">Numéro de la première page (pagination de départ)</label>
     <input type="number" id="startPage" min="1" max="50">
