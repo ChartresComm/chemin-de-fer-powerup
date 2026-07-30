@@ -9,7 +9,6 @@ var unassignedListEl = document.getElementById('unassigned-list');
 var statusEl = document.getElementById('cdf-status');
 var refreshBtn = document.getElementById('cdf-refresh');
 var exportBtn = document.getElementById('cdf-export');
-var authorizeBtn = document.getElementById('cdf-authorize');
 
 var titleInput = document.getElementById('cdf-title');
 var closingDateInput = document.getElementById('cdf-closing-date');
@@ -41,7 +40,6 @@ var currentMeta = {};
 var currentHistory = [];
 var currentCells = [];
 var currentCards = [];
-var customFieldDefs = [];
 
 function setStatus(msg) {
   statusEl.textContent = msg;
@@ -66,69 +64,37 @@ function cardLabelDots(card) {
   }).join('');
 }
 
-function findStatus(card) {
-  if (!customFieldDefs.length || !card.customFieldItems || !card.customFieldItems.length) return null;
-  var targetName = (currentConfig.statusFieldName || 'Statut').trim().toLowerCase();
-  var fieldDef = customFieldDefs.filter(function (f) {
-    return f.name && f.name.trim().toLowerCase() === targetName;
-  })[0];
-  if (!fieldDef) return null;
-
-  var item = card.customFieldItems.filter(function (it) {
-    return it.idCustomField === fieldDef.id;
-  })[0];
-  if (!item) return null;
-
-  if (fieldDef.type === 'list' && item.idValue && fieldDef.options) {
-    var opt = fieldDef.options.filter(function (o) { return o.id === item.idValue; })[0];
-    if (!opt) return null;
-    return { text: (opt.value && opt.value.text) || '', color: cdfColorToHex(opt.color) };
-  }
-  if (item.value) {
-    var text = item.value.text;
-    if (text === undefined) text = item.value.number;
-    if (text === undefined && item.value.checked !== undefined) text = item.value.checked ? 'Oui' : 'Non';
-    if (text === undefined) text = item.value.date;
-    return { text: text, color: '#dfe1e6' };
-  }
-  return null;
-}
-
-function memberChipsHtml(card) {
-  var members = card.members || [];
-  if (!members.length) return '';
-  return '<div class="cdf-card-members">' + members.map(function (m) {
-    var initials = m.initials;
-    if (!initials && m.fullName) {
-      initials = m.fullName.split(' ').map(function (p) { return p[0]; }).join('').slice(0, 2).toUpperCase();
-    }
-    initials = initials || '?';
-    return '<span class="cdf-member-chip" style="background:' + cdfHashColor(m.id || initials) +
-      '" title="' + escapeHtml(m.fullName || '') + '">' + escapeHtml(initials) + '</span>';
-  }).join('') + '</div>';
-}
-
 function renderCardEl(card) {
   var li = document.createElement('li');
   li.className = 'cdf-card';
   li.setAttribute('data-id', card.id);
-
-  var status = findStatus(card);
-  var statusHtml = (status && status.text)
-    ? '<span class="cdf-status-pill" style="background:' + status.color + '">' + escapeHtml(status.text) + '</span>'
-    : '';
-
   li.innerHTML =
-    '<div class="cdf-card-top-row">' +
-      '<div class="cdf-card-labels">' + cardLabelDots(card) + '</div>' +
-      statusHtml +
-    '</div>' +
-    '<div class="cdf-card-name">' + escapeHtml(card.name) + '</div>' +
-    memberChipsHtml(card);
+    '<div class="cdf-card-labels">' + cardLabelDots(card) + '</div>' +
+    '<div class="cdf-card-name">' + escapeHtml(card.name) + '</div>';
   return li;
 }
 
 // --- Construction générique d'une grille (utilisée pour la vue live ET l'historique figé) ---
+// Chaque planche double (2 pages) est scindée en 3 zones : gauche / entre-les-deux / droite,
+// pour qu'une carte puisse être posée sur une seule page ou à cheval sur les deux.
+
+function buildZoneColumn(cellIndex, zone, pageNum, extraClass) {
+  var col = document.createElement('div');
+  col.className = 'cdf-zone-col ' + extraClass;
+
+  var ul = document.createElement('ul');
+  ul.className = 'cdf-card-list';
+  ul.setAttribute('data-cell', String(cellIndex));
+  ul.setAttribute('data-zone', zone);
+  col.appendChild(ul);
+
+  var footer = document.createElement('div');
+  footer.className = 'cdf-zone-footer';
+  footer.textContent = pageNum ? 'P.' + pageNum : '';
+  col.appendChild(footer);
+
+  return col;
+}
 
 function buildGridInto(container, config, rubriques, interactive) {
   container.innerHTML = '';
@@ -150,19 +116,17 @@ function buildGridInto(container, config, rubriques, interactive) {
     pageLabel.textContent = cell.label;
     rubriqueBar.appendChild(pageLabel);
 
-    var titleSpan = document.createElement('span');
-    titleSpan.className = 'cdf-rubrique-title';
-    titleSpan.textContent = saved.title || '';
     if (interactive) {
-      titleSpan.contentEditable = 'true';
-      titleSpan.setAttribute('data-placeholder', 'Rubrique…');
-      titleSpan.addEventListener('blur', function () {
-        saveRubrique(i, 'title', titleSpan.textContent.trim());
+      var titleInputEl = document.createElement('input');
+      titleInputEl.type = 'text';
+      titleInputEl.className = 'cdf-rubrique-title-input';
+      titleInputEl.placeholder = 'Rubrique…';
+      titleInputEl.value = saved.title || '';
+      titleInputEl.addEventListener('blur', function () {
+        saveRubrique(i, 'title', titleInputEl.value.trim());
       });
-    }
-    rubriqueBar.appendChild(titleSpan);
+      rubriqueBar.appendChild(titleInputEl);
 
-    if (interactive) {
       var colorInput = document.createElement('input');
       colorInput.type = 'color';
       colorInput.className = 'cdf-rubrique-color';
@@ -172,24 +136,26 @@ function buildGridInto(container, config, rubriques, interactive) {
         saveRubrique(i, 'color', colorInput.value);
       });
       rubriqueBar.appendChild(colorInput);
+    } else if (saved.title) {
+      var titleSpan = document.createElement('span');
+      titleSpan.className = 'cdf-rubrique-title-static';
+      titleSpan.textContent = saved.title;
+      rubriqueBar.appendChild(titleSpan);
     }
 
-    var pagesRow = document.createElement('div');
-    pagesRow.className = 'cdf-pages-row ' + (cell.pages.length === 2 ? 'cdf-pages-pair' : 'cdf-pages-single');
-    cell.pages.forEach(function (pageNum) {
-      var pageBox = document.createElement('div');
-      pageBox.className = 'cdf-page-box';
-      pageBox.textContent = 'P.' + pageNum;
-      pagesRow.appendChild(pageBox);
-    });
+    var zonesRow = document.createElement('div');
+    zonesRow.className = 'cdf-zones-row';
 
-    var ul = document.createElement('ul');
-    ul.className = 'cdf-card-list';
-    ul.setAttribute('data-spread', String(i));
+    if (cell.pages.length === 1) {
+      zonesRow.appendChild(buildZoneColumn(i, 'single', cell.pages[0], 'cdf-zone-single'));
+    } else {
+      zonesRow.appendChild(buildZoneColumn(i, 'left', cell.pages[0], 'cdf-zone-left'));
+      zonesRow.appendChild(buildZoneColumn(i, 'both', null, 'cdf-zone-both'));
+      zonesRow.appendChild(buildZoneColumn(i, 'right', cell.pages[1], 'cdf-zone-right'));
+    }
 
     cellDiv.appendChild(rubriqueBar);
-    cellDiv.appendChild(pagesRow);
-    cellDiv.appendChild(ul);
+    cellDiv.appendChild(zonesRow);
     container.appendChild(cellDiv);
   });
 
@@ -202,13 +168,18 @@ function renderCardsInto(container, cells, layout, cards, unassignedContainer) {
 
   var assignments = (layout && layout.assignments) || {};
   cards.forEach(function (card) {
-    var idx = assignments[card.id];
-    var targetList;
-    if (idx === undefined || idx === null || idx >= cells.length) {
-      targetList = unassignedContainer;
-    } else {
-      targetList = container.querySelector('.cdf-card-list[data-spread="' + idx + '"]');
+    var key = assignments[card.id];
+    var targetList = null;
+
+    if (key) {
+      var parts = String(key).split('|');
+      var cellIdx = parseInt(parts[0], 10);
+      var zone = parts[1];
+      if (cellIdx >= 0 && cellIdx < cells.length) {
+        targetList = container.querySelector('.cdf-card-list[data-cell="' + cellIdx + '"][data-zone="' + zone + '"]');
+      }
     }
+    if (!targetList) targetList = unassignedContainer;
     if (targetList) targetList.appendChild(renderCardEl(card));
   });
 }
@@ -244,9 +215,10 @@ function initSortable() {
 function saveLayoutFromDom() {
   var assignments = {};
   gridEl.querySelectorAll('.cdf-card-list').forEach(function (ul) {
-    var idx = parseInt(ul.getAttribute('data-spread'), 10);
+    var cellIdx = ul.getAttribute('data-cell');
+    var zone = ul.getAttribute('data-zone');
     ul.querySelectorAll('.cdf-card').forEach(function (li) {
-      assignments[li.getAttribute('data-id')] = idx;
+      assignments[li.getAttribute('data-id')] = cellIdx + '|' + zone;
     });
   });
   currentLayout = { assignments: assignments };
@@ -278,49 +250,20 @@ distributionDateInput.addEventListener('change', saveMetaFromInputs);
 
 // --- Chargement des cartes (avec filtrage de la liste "archivées") ---
 
-function loadCardsBasic() {
-  return t.cards('id', 'name', 'labels', 'closed', 'idList').then(function (cards) {
-    currentCards = cards.filter(function (c) { return !c.closed; });
-    customFieldDefs = [];
-  });
-}
-
-function loadCardsViaRest() {
-  return t.board('id').then(function (board) {
-    return Promise.all([
-      cdfRestGet(t, '/boards/' + board.id + '/customFields'),
-      cdfRestGet(t, '/boards/' + board.id + '/cards?customFieldItems=true&members=true&member_fields=initials,fullName&fields=id,name,labels,closed,idList')
-    ]);
-  }).then(function (res) {
-    customFieldDefs = res[0];
-    currentCards = res[1].filter(function (c) { return !c.closed; });
-  }).catch(function () {
-    setStatus('Erreur champs personnalisés — mode simplifié');
-    return loadCardsBasic();
-  });
-}
-
 function loadCards() {
-  return Promise.all([
-    t.lists('id', 'name').catch(function () { return []; }),
-    cdfIsAuthorized(t)
-  ]).then(function (res) {
-    var lists = res[0] || [];
-    var authorized = res[1];
-    authorizeBtn.style.display = authorized ? 'none' : 'inline-block';
-
-    var targetName = (currentConfig.archivedListName || 'Archivées').trim().toLowerCase();
+  return t.lists('id', 'name').catch(function () { return []; }).then(function (lists) {
+    var normalize = function (s) {
+      return (s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    };
+    var targetName = normalize(currentConfig.archivedListName || 'Archivées');
     var archivedIds = lists.filter(function (l) {
-      return l.name && l.name.trim().toLowerCase() === targetName;
+      return normalize(l.name) === targetName;
     }).map(function (l) { return l.id; });
 
-    var cardsPromise = authorized ? loadCardsViaRest() : loadCardsBasic();
-    return cardsPromise.then(function () {
-      if (archivedIds.length) {
-        currentCards = currentCards.filter(function (c) {
-          return archivedIds.indexOf(c.idList) === -1;
-        });
-      }
+    return t.cards('id', 'name', 'labels', 'closed', 'idList').then(function (cards) {
+      currentCards = cards.filter(function (c) {
+        return !c.closed && archivedIds.indexOf(c.idList) === -1;
+      });
     });
   });
 }
@@ -329,7 +272,6 @@ function fullRender() {
   buildGrid();
   renderCards();
   initSortable();
-  t.sizeTo('body');
 }
 
 function init() {
@@ -356,20 +298,58 @@ refreshBtn.addEventListener('click', function () {
   });
 });
 
-authorizeBtn.addEventListener('click', function () {
-  cdfAuthorize(t).then(function () {
-    return loadCards();
-  }).then(function () {
-    renderCards();
-    initSortable();
-    setStatus('Autorisé');
-  }).catch(function () {
-    setStatus('Autorisation annulée');
-  });
-});
+// --- Export PDF (avec titre, bouclage et distribution inclus dans l'image) ---
+
+function formatDate(d) {
+  if (!d) return '';
+  var parts = d.split('-');
+  if (parts.length !== 3) return d;
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+function buildExportContainer() {
+  var wrap = document.createElement('div');
+  wrap.style.position = 'fixed';
+  wrap.style.top = '-99999px';
+  wrap.style.left = '0';
+  wrap.style.background = '#ffffff';
+  wrap.style.padding = '20px';
+  wrap.style.width = gridEl.scrollWidth + 'px';
+  wrap.style.fontFamily = getComputedStyle(document.body).fontFamily;
+
+  var h1 = document.createElement('div');
+  h1.style.fontSize = '20px';
+  h1.style.fontWeight = '700';
+  h1.style.marginBottom = '4px';
+  h1.textContent = currentMeta.title || 'Chemin de fer';
+  wrap.appendChild(h1);
+
+  var dateParts = [];
+  if (currentMeta.closingDate) dateParts.push('Bouclage : ' + formatDate(currentMeta.closingDate));
+  if (currentMeta.distributionDate) dateParts.push('Distribution : ' + formatDate(currentMeta.distributionDate));
+  if (dateParts.length) {
+    var datesLine = document.createElement('div');
+    datesLine.style.fontSize = '13px';
+    datesLine.style.color = '#5e6c84';
+    datesLine.style.marginBottom = '16px';
+    datesLine.textContent = dateParts.join('   •   ');
+    wrap.appendChild(datesLine);
+  }
+
+  wrap.appendChild(gridEl.cloneNode(true));
+  document.body.appendChild(wrap);
+  return wrap;
+}
 
 function generateGridCanvas() {
-  return html2canvas(gridEl, { backgroundColor: '#ffffff', scale: 2 });
+  var wrap = buildExportContainer();
+  return html2canvas(wrap, { backgroundColor: '#ffffff', scale: 2 }).then(function (canvas) {
+    document.body.removeChild(wrap);
+    return canvas;
+  }).catch(function (err) {
+    if (wrap.parentNode) document.body.removeChild(wrap);
+    throw err;
+  });
 }
 
 function buildPdfFromCanvas(canvas) {
@@ -389,74 +369,37 @@ exportBtn.addEventListener('click', function () {
     var filename = (currentMeta.title ? currentMeta.title.replace(/[^a-z0-9\-_]+/gi, '_') : 'chemin-de-fer') + '.pdf';
     pdf.save(filename);
     setStatus('PDF exporté');
-  }).catch(function () {
+  }).catch(function (err) {
+    console.error(err);
     setStatus('Erreur export PDF');
   });
 });
 
-// --- Nouveau chemin de fer (archive figée + reset) ---
+// --- Nouveau chemin de fer (archivage figé dans l'historique + reset) ---
 
-newBtn.addEventListener('click', function () {
-  newCurrentTitleSpan.textContent = currentMeta.title || 'Sans titre';
-  newTitleInput.value = '';
-  newBaseSelect.value = 'template';
-  newOverlay.classList.add('cdf-overlay-visible');
-});
+function archiveCurrentAndReset(newTitle, base) {
+  setStatus('Archivage…');
 
-newCancelBtn.addEventListener('click', function () {
-  newOverlay.classList.remove('cdf-overlay-visible');
-});
+  var issueId = 'issue-' + Date.now();
+  var compactCards = currentCards.map(function (c) {
+    return { i: c.id, n: c.name, c: (c.labels || []).map(function (l) { return l.color; }) };
+  });
+  var snapshot = {
+    config: currentConfig,
+    layout: currentLayout,
+    rubriques: currentRubriques,
+    cardsSnapshot: compactCards
+  };
 
-function buildEditionCardDescription(meta) {
-  var lines = ['Chemin de fer archivé automatiquement par le Power-Up.'];
-  if (meta.closingDate) lines.push('Bouclage : ' + formatDate(meta.closingDate));
-  if (meta.distributionDate) lines.push('Distribution : ' + formatDate(meta.distributionDate));
-  lines.push('Le PDF joint reflète la disposition au moment de l’archivage. Pour le détail interactif, ouvrir le Power-Up « Chemin de fer » > Historique.');
-  return lines.join('\n');
-}
-
-function archiveCurrentAsCardAndReset(newTitle, base) {
-  setStatus('Autorisation…');
-  return cdfAuthorize(t).then(function () {
-    setStatus('Création de la carte d’édition…');
-    return t.board('id');
-  }).then(function (board) {
-    return cdfFindOrCreateList(t, board.id, currentConfig.editionsListName || 'Éditions');
-  }).then(function (listId) {
-    var desc = buildEditionCardDescription(currentMeta);
-    var name = currentMeta.title || 'Sans titre';
-    return cdfRestPost(t, '/cards?idList=' + listId + '&name=' + encodeURIComponent(name) + '&desc=' + encodeURIComponent(desc));
-  }).then(function (card) {
-    setStatus('Export du PDF…');
-    return generateGridCanvas().then(function (canvas) {
-      var pdf = buildPdfFromCanvas(canvas);
-      var blob = pdf.output('blob');
-      var filename = (currentMeta.title ? currentMeta.title.replace(/[^a-z0-9\-_]+/gi, '_') : 'chemin-de-fer') + '.pdf';
-      return cdfRestPostAttachment(t, card.id, blob, filename).then(function () { return card; });
-    });
-  }).then(function (card) {
-    var issueId = 'issue-' + Date.now();
-    var compactCards = currentCards.map(function (c) {
-      return { i: c.id, n: c.name, c: (c.labels || []).map(function (l) { return l.color; }) };
-    });
-    var snapshot = {
-      config: currentConfig,
-      layout: currentLayout,
-      rubriques: currentRubriques,
-      cardsSnapshot: compactCards
-    };
-    return cdfSaveIssueSnapshot(t, issueId, snapshot).then(function () {
-      currentHistory = currentHistory.concat([{
-        id: issueId,
-        title: currentMeta.title || 'Sans titre',
-        closingDate: currentMeta.closingDate || '',
-        distributionDate: currentMeta.distributionDate || '',
-        savedAt: new Date().toISOString(),
-        trelloCardId: card.id,
-        trelloCardUrl: card.shortUrl || card.url || null
-      }]);
-      return cdfSaveHistory(t, currentHistory);
-    });
+  return cdfSaveIssueSnapshot(t, issueId, snapshot).then(function () {
+    currentHistory = currentHistory.concat([{
+      id: issueId,
+      title: currentMeta.title || 'Sans titre',
+      closingDate: currentMeta.closingDate || '',
+      distributionDate: currentMeta.distributionDate || '',
+      savedAt: new Date().toISOString()
+    }]);
+    return cdfSaveHistory(t, currentHistory);
   }).then(function () {
     if (base === 'scratch') {
       currentConfig = JSON.parse(JSON.stringify(CDF_DEFAULT_CONFIG));
@@ -484,23 +427,27 @@ function archiveCurrentAsCardAndReset(newTitle, base) {
   });
 }
 
+newBtn.addEventListener('click', function () {
+  newCurrentTitleSpan.textContent = currentMeta.title || 'Sans titre';
+  newTitleInput.value = '';
+  newBaseSelect.value = 'template';
+  newOverlay.classList.add('cdf-overlay-visible');
+});
+
+newCancelBtn.addEventListener('click', function () {
+  newOverlay.classList.remove('cdf-overlay-visible');
+});
+
 newConfirmBtn.addEventListener('click', function () {
   var newTitle = newTitleInput.value.trim();
   if (!newTitle) {
     setStatus('Titre requis');
     return;
   }
-  archiveCurrentAsCardAndReset(newTitle, newBaseSelect.value);
+  archiveCurrentAndReset(newTitle, newBaseSelect.value);
 });
 
 // --- Historique figé (consultation seule) ---
-
-function formatDate(d) {
-  if (!d) return '';
-  var parts = d.split('-');
-  if (parts.length !== 3) return d;
-  return parts[2] + '/' + parts[1] + '/' + parts[0];
-}
 
 function renderHistoryList() {
   historyListEl.innerHTML = '';
@@ -514,13 +461,10 @@ function renderHistoryList() {
     var dates = [];
     if (entry.closingDate) dates.push('Bouclage ' + formatDate(entry.closingDate));
     if (entry.distributionDate) dates.push('Distribution ' + formatDate(entry.distributionDate));
-    var linkHtml = entry.trelloCardUrl
-      ? ' · <a href="' + escapeHtml(entry.trelloCardUrl) + '" target="_blank" rel="noopener">Voir la carte Trello</a>'
-      : '';
     li.innerHTML =
       '<div class="cdf-history-item-info">' +
         '<strong>' + escapeHtml(entry.title) + '</strong>' +
-        '<span>' + escapeHtml(dates.join(' · ')) + linkHtml + '</span>' +
+        '<span>' + escapeHtml(dates.join(' · ')) + '</span>' +
       '</div>' +
       '<button class="mod-secondary cdf-history-view-btn">Consulter</button>';
     li.querySelector('.cdf-history-view-btn').addEventListener('click', function () {
@@ -549,7 +493,6 @@ function showHistoryDetail(entry) {
     if (entry.distributionDate) dates.push('Distribution : ' + formatDate(entry.distributionDate));
     historyDetailDates.textContent = dates.join(' — ');
 
-    // Le format compact ({i,n,c}) est reconverti en objets carte pour réutiliser renderCardEl
     var cardsForRender = (snapshot.cardsSnapshot || []).map(function (c) {
       return {
         id: c.i,

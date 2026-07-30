@@ -35,18 +35,29 @@ TrelloPowerUp.initialize({
     });
   },
 
-  // Badge affiché sur la face de chaque carte : n° de planche si elle est placée
+  // Badge affiché sur la face de chaque carte : numéro(s) de page si elle est placée
   'card-badges': function (t, options) {
     return t.card('id').then(function (card) {
-      return cdfGetLayout(t).then(function (layout) {
-        var idx = layout.assignments ? layout.assignments[card.id] : undefined;
-        if (idx === undefined || idx === null) {
-          return [];
-        }
-        return [{
-          text: 'Planche ' + (idx + 1),
-          color: 'blue'
-        }];
+      return Promise.all([cdfGetLayout(t), cdfGetConfig(t)]).then(function (res) {
+        var layout = res[0];
+        var config = res[1];
+        var key = layout.assignments ? layout.assignments[card.id] : undefined;
+        if (!key) return [];
+
+        var parts = key.split('|');
+        var cellIdx = parseInt(parts[0], 10);
+        var zone = parts[1];
+        var cells = cdfComputeCells(config);
+        var cell = cells[cellIdx];
+        if (!cell) return [];
+
+        var text;
+        if (zone === 'left') text = 'P.' + cell.pages[0];
+        else if (zone === 'right') text = 'P.' + cell.pages[1];
+        else if (zone === 'both') text = 'P.' + cell.pages[0] + '-' + cell.pages[1];
+        else text = 'P.' + cell.pages[0];
+
+        return [{ text: text, color: 'blue' }];
       });
     });
   }

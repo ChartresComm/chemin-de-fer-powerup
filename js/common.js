@@ -1,17 +1,13 @@
 // common.js
-// Fonctions partagées : configuration, disposition, rubriques, et accès
-// REST (autorisé) pour lire les champs personnalisés / membres.
+// Fonctions partagées : configuration, disposition, rubriques, historique.
+// Tout repose uniquement sur t.get/t.set (stockage Trello natif) — aucune
+// autorisation ni appel REST externe n'est nécessaire.
 
 var CDF_CONFIG_KEY = 'cdfConfig';
 var CDF_LAYOUT_KEY = 'cdfLayout';
 var CDF_RUBRIQUES_KEY = 'cdfRubriques';
 var CDF_META_KEY = 'cdfMeta';
 var CDF_HISTORY_KEY = 'cdfHistory';
-
-// ⚠️ À renseigner : clé API Trello (créée sur https://trello.com/power-ups/admin,
-// onglet "Clé API" de ton Power-Up, ou https://trello.com/app-key).
-// Nécessaire uniquement pour afficher le Statut (champ personnalisé) et les membres.
-var TRELLO_API_KEY = 'COLLE_TA_CLE_API_ICI';
 
 var CDF_TEMPLATES = {
   'chartres-metropole-60p': {
@@ -36,9 +32,7 @@ var CDF_DEFAULT_CONFIG = {
   totalPages: CDF_TEMPLATES['chartres-metropole-60p'].totalPages,
   startPage: 1,
   columns: CDF_TEMPLATES['chartres-metropole-60p'].columns,
-  statusFieldName: 'Statut',
-  archivedListName: 'Archivées',
-  editionsListName: 'Éditions'
+  archivedListName: 'Archivées'
 };
 
 var CDF_DEFAULT_META = { title: '', closingDate: '', distributionDate: '' };
@@ -73,7 +67,7 @@ function cdfSaveMeta(t, meta) {
 }
 
 function cdfGetHistory(t) {
-  // Index léger : [{ id, title, closingDate, distributionDate, savedAt, trelloCardId, trelloCardUrl }]
+  // Index léger : [{ id, title, closingDate, distributionDate, savedAt }]
   return t.get('board', 'shared', CDF_HISTORY_KEY, []);
 }
 function cdfSaveHistory(t, history) {
@@ -114,72 +108,7 @@ function cdfComputeCells(config) {
   return cells;
 }
 
-// --- Accès REST (autorisation nécessaire) pour Statut / Membres ---
-
-function cdfIsAuthorized(t) {
-  try {
-    return t.getRestApi().isAuthorized();
-  } catch (e) {
-    return Promise.resolve(false);
-  }
-}
-
-function cdfAuthorize(t) {
-  return t.getRestApi().authorize({
-    scope: 'read,write',
-    title: 'Chemin de fer'
-  });
-}
-
-function cdfRestGet(t, path) {
-  return t.getRestApi().getToken().then(function (token) {
-    var sep = path.indexOf('?') === -1 ? '?' : '&';
-    var url = 'https://api.trello.com/1' + path + sep + 'key=' + TRELLO_API_KEY + '&token=' + token;
-    return fetch(url).then(function (res) {
-      if (!res.ok) throw new Error('Erreur REST Trello (' + res.status + ')');
-      return res.json();
-    });
-  });
-}
-
-function cdfRestPost(t, path) {
-  return t.getRestApi().getToken().then(function (token) {
-    var sep = path.indexOf('?') === -1 ? '?' : '&';
-    var url = 'https://api.trello.com/1' + path + sep + 'key=' + TRELLO_API_KEY + '&token=' + token;
-    return fetch(url, { method: 'POST' }).then(function (res) {
-      if (!res.ok) throw new Error('Erreur REST Trello (' + res.status + ')');
-      return res.json();
-    });
-  });
-}
-
-function cdfRestPostAttachment(t, cardId, blob, filename) {
-  return t.getRestApi().getToken().then(function (token) {
-    var url = 'https://api.trello.com/1/cards/' + cardId + '/attachments?key=' + TRELLO_API_KEY + '&token=' + token;
-    var form = new FormData();
-    form.append('file', blob, filename);
-    return fetch(url, { method: 'POST', body: form }).then(function (res) {
-      if (!res.ok) throw new Error('Erreur pièce jointe (' + res.status + ')');
-      return res.json();
-    });
-  });
-}
-
-// Trouve la liste par nom (insensible à la casse) ou la crée si absente.
-function cdfFindOrCreateList(t, boardId, name) {
-  return t.lists('id', 'name').catch(function () { return []; }).then(function (lists) {
-    var target = name.trim().toLowerCase();
-    var found = lists.filter(function (l) {
-      return l.name && l.name.trim().toLowerCase() === target;
-    })[0];
-    if (found) return found.id;
-    return cdfRestPost(t, '/lists?name=' + encodeURIComponent(name) + '&idBoard=' + boardId).then(function (created) {
-      return created.id;
-    });
-  });
-}
-
-// Couleurs Trello (labels / options de champs personnalisés)
+// Couleurs Trello (étiquettes)
 var TRELLO_COLORS = {
   green: '#61bd4f', yellow: '#f2d600', orange: '#ff9f1a', red: '#eb5a46',
   purple: '#c377e0', blue: '#0079bf', sky: '#00c2e0', lime: '#51e898',
@@ -187,14 +116,4 @@ var TRELLO_COLORS = {
 };
 function cdfColorToHex(name) {
   return TRELLO_COLORS[name] || '#dfe1e6';
-}
-
-// Couleur stable (non liée à Trello) générée à partir d'une chaîne, pour les avatars membres
-function cdfHashColor(str) {
-  var hash = 0;
-  for (var i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  var hue = Math.abs(hash) % 360;
-  return 'hsl(' + hue + ', 55%, 55%)';
 }

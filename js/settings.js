@@ -9,9 +9,7 @@ var customFields = document.getElementById('custom-fields');
 var totalPagesInput = document.getElementById('totalPages');
 var columnsInput = document.getElementById('columns');
 var startPageInput = document.getElementById('startPage');
-var statusFieldNameInput = document.getElementById('statusFieldName');
 var archivedListNameInput = document.getElementById('archivedListName');
-var editionsListNameInput = document.getElementById('editionsListName');
 var form = document.getElementById('settings-form');
 
 Object.keys(CDF_TEMPLATES).forEach(function (key) {
@@ -39,9 +37,7 @@ cdfGetConfig(t).then(function (config) {
   totalPagesInput.value = config.totalPages;
   columnsInput.value = config.columns;
   startPageInput.value = config.startPage || 1;
-  statusFieldNameInput.value = config.statusFieldName || 'Statut';
   archivedListNameInput.value = config.archivedListName || 'Archivées';
-  editionsListNameInput.value = config.editionsListName || 'Éditions';
   updateCustomVisibility();
   t.sizeTo('#settings-form');
 });
@@ -54,9 +50,7 @@ form.addEventListener('submit', function (e) {
     totalPages: parseInt(totalPagesInput.value, 10) || CDF_DEFAULT_CONFIG.totalPages,
     columns: parseInt(columnsInput.value, 10) || CDF_DEFAULT_CONFIG.columns,
     startPage: parseInt(startPageInput.value, 10) || 1,
-    statusFieldName: (statusFieldNameInput.value || 'Statut').trim(),
-    archivedListName: (archivedListNameInput.value || 'Archivées').trim(),
-    editionsListName: (editionsListNameInput.value || 'Éditions').trim()
+    archivedListName: (archivedListNameInput.value || 'Archivées').trim()
   };
 
   cdfSaveConfig(t, newConfig).then(function () {
