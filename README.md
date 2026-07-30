@@ -3,14 +3,14 @@
 ## Ce que fait ce Power-Up
 
 - Bouton **« Chemin de fer »** dans la barre du tableau → grille plein écran des pages de la publication.
-- **Pagination automatique** : la page 1 (couverture) est seule, puis les pages suivantes sont accolées par paires (« p.2-3 », « p.4-5 »…), avec un numéro de première page réglable dans les paramètres.
+- **Pagination automatique** : la page 1 (couverture) est seule, puis les pages suivantes sont accolées par paires (« p.2-3 », « p.4-5 »…), avec un numéro de première page réglable et un nombre total de pages réglable de 2 à 200.
 - **Chaque planche double a 3 zones de dépôt** : colonne de gauche (une page), colonne de droite (l'autre page), et une bande centrale « sur les 2 pages » pour une carte qui s'étale sur les deux. Le numéro de page (« P.4 », « P.5 ») reste affiché sous chaque colonne.
 - **Rubriques** : chaque planche a un champ de titre libre + une pastille de couleur de fond, tous deux modifiables directement.
 - **Titre + dates** : un champ titre en haut de la vue, une date de bouclage et une date de distribution.
 - **Cartes archivées invisibles** : les cartes déplacées dans une liste nommée « Archivées » (nom modifiable dans les réglages) disparaissent automatiquement du chemin de fer.
 - **Export PDF** : inclut le titre et les dates de bouclage/distribution en en-tête, en plus de la grille complète.
 - **Nouveau chemin de fer** : archive le numéro en cours (titre, dates, disposition, cartes) dans un historique interne au Power-Up, puis repart soit du même modèle de pagination (planches vidées) — **rubriques conservées** dans ce cas — soit de zéro (rubriques réinitialisées aussi).
-- **Historique** : liste tous les anciens chemins de fer archivés ; « Consulter » affiche leur disposition telle qu'elle était au moment de l'archivage (lecture seule).
+- **Historique** : liste tous les anciens chemins de fer archivés ; « Consulter » affiche leur disposition telle qu'elle était au moment de l'archivage (lecture seule). Un bouton **« Supprimer tout l'historique »** permet d'effacer définitivement toutes les archives (avec confirmation).
 - **Dupliquer une carte** : chaque carte affiche un petit bouton « ⧉ » en haut à droite. Cliquer dessus crée une copie de cette carte dans « Cartes non placées », que tu peux ensuite glisser sur une autre planche. Utile pour :
   - un article qui s'étale sur **plusieurs doubles-pages** (place la même carte sur chaque planche concernée) ;
   - un **miroir** : un même contenu (pub récurrente, encart fixe...) affiché à l'identique à plusieurs endroits — puisque toutes les copies pointent vers la même carte Trello, une modification du nom/étiquettes se reflète partout au prochain chargement.
