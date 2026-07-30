@@ -14,7 +14,6 @@
 - **Dupliquer une carte** : chaque carte affiche un petit bouton « ⧉ » en haut à droite. Cliquer dessus crée une copie de cette carte dans « Cartes non placées », que tu peux ensuite glisser sur une autre planche. Utile pour :
   - un article qui s'étale sur **plusieurs doubles-pages** (place la même carte sur chaque planche concernée) ;
   - un **miroir** : un même contenu (pub récurrente, encart fixe...) affiché à l'identique à plusieurs endroits — puisque toutes les copies pointent vers la même carte Trello, une modification du nom/étiquettes se reflète partout au prochain chargement.
-- Chaque carte affiche un badge sur sa face Trello classique indiquant sa ou ses pages (« P.4 » ou « P.4-5 » si elle couvre les deux).
 - Tout est enregistré dans le stockage Trello du tableau (**visibilité partagée**) : tous les membres du tableau voient et modifient la même chose. **Aucune clé API, aucune autorisation externe n'est nécessaire** — tout repose uniquement sur le stockage natif du Power-Up.
 
 ## Ce qui a changé dans cette version (corrections de bugs)
@@ -41,7 +40,7 @@ Si c'est déjà fait lors d'une version précédente, il n'y a rien à refaire i
 
 1. Va sur https://trello.com/power-ups/admin
 2. Renseigne l'URL de l'iframe (connector) : `https://<ton-url-github-pages>/index.html`
-3. Les capacités (`board-buttons`, `show-settings`, `card-badges`) sont déclarées automatiquement par le code — rien à faire de plus dans l'admin.
+3. Les capacités (`board-buttons`, `show-settings`) sont déclarées automatiquement par le code — rien à faire de plus dans l'admin.
 
 ## Étape 3 — Activer le Power-Up sur un tableau
 
