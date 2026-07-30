@@ -315,6 +315,27 @@ body {
   cursor: grab;
   border: 1px solid #dfe1e6;
   font-size: 12px;
+  position: relative;
+}
+.cdf-card-duplicate-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  line-height: 14px;
+  padding: 0;
+  border: 1px solid #dfe1e6;
+  border-radius: 3px;
+  background: white;
+  color: #5e6c84;
+  font-size: 11px;
+  cursor: pointer;
+}
+.cdf-card-duplicate-btn:hover {
+  background: #0079bf;
+  color: white;
+  border-color: #0079bf;
 }
 .cdf-card-ghost {
   opacity: 0.4;
