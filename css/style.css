@@ -369,6 +369,13 @@ body {
 .cdf-card-name {
   line-height: 1.3;
 }
+.cdf-card-name-link {
+  cursor: pointer;
+}
+.cdf-card-name-link:hover {
+  text-decoration: underline;
+  color: #0079bf;
+}
 
 /* Dialogues modaux (nouveau chemin de fer / historique) */
 .cdf-overlay {
