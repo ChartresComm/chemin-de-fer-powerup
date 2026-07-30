@@ -1,9 +1,14 @@
+html {
+  height: 100%;
+}
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   margin: 0;
   padding: 0;
   color: #172b4d;
   background: #f4f5f7;
+  min-height: 100%;
+  overflow-y: auto;
 }
 
 /* --- Réglages --- */
@@ -153,7 +158,7 @@ body {
   margin-bottom: 6px;
 }
 
-/* Bandeau rubrique : titre éditable + pastille de couleur */
+/* Bandeau rubrique : titre en champ texte + pastille de couleur */
 .cdf-rubrique {
   display: flex;
   align-items: center;
@@ -168,18 +173,26 @@ body {
   color: #5e6c84;
   flex: 0 0 auto;
 }
-.cdf-rubrique-title {
+.cdf-rubrique-title-input {
   flex: 1;
   font-size: 12px;
   font-weight: 600;
-  min-height: 16px;
-  outline: none;
-  cursor: text;
+  min-height: 20px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.6);
+  padding: 2px 4px;
 }
-.cdf-rubrique-title:empty:before {
-  content: attr(data-placeholder);
-  color: #97a0af;
-  font-weight: 400;
+.cdf-rubrique-title-input:hover,
+.cdf-rubrique-title-input:focus {
+  border-color: #b3bac5;
+  outline: none;
+  background: white;
+}
+.cdf-rubrique-title-static {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
 }
 .cdf-rubrique-color {
   width: 18px;
@@ -191,30 +204,65 @@ body {
   flex: 0 0 auto;
 }
 
-/* Pages accolées : page 1 seule, sinon paire jointe */
-.cdf-pages-row {
+/* Zones d'une planche : gauche / entre-les-deux / droite (ou une seule zone en couverture) */
+.cdf-zones-row {
   display: flex;
-  margin-bottom: 6px;
+  gap: 4px;
+  flex: 1;
 }
-.cdf-page-box {
+.cdf-zone-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 90px;
+}
+.cdf-zone-single {
+  flex: 1;
+}
+.cdf-zone-left,
+.cdf-zone-right {
   flex: 1;
   background: #fafbfc;
   border: 1px solid #dfe1e6;
-  font-size: 10px;
+  border-radius: 3px;
+  padding: 4px;
+}
+.cdf-zone-both {
+  flex: 0 0 64px;
+  background: #eef3fb;
+  border: 1px dashed #8fb3dc;
+  border-radius: 3px;
+  padding: 2px;
+  position: relative;
+}
+.cdf-zone-both::before {
+  content: "sur les 2 pages";
+  position: absolute;
+  top: 2px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 8px;
+  color: #6b8cae;
+  font-weight: 700;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.cdf-zone-both .cdf-card-list {
+  margin-top: 14px;
+}
+.cdf-zone-col .cdf-card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 40px;
+}
+.cdf-zone-footer {
+  font-size: 9px;
   color: #97a0af;
   text-align: center;
-  padding: 3px 0;
-}
-.cdf-pages-pair .cdf-page-box:first-child {
-  border-right: none;
-  border-radius: 3px 0 0 3px;
-}
-.cdf-pages-pair .cdf-page-box:last-child {
-  border-radius: 0 3px 3px 0;
-}
-.cdf-pages-single .cdf-page-box {
-  border-radius: 3px;
-  max-width: 60px;
+  font-weight: 700;
+  padding-top: 2px;
 }
 
 /* Statut (champ personnalisé) */
