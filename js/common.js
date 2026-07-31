@@ -158,3 +158,41 @@ var TRELLO_COLORS = {
 function cdfColorToHex(name) {
   return TRELLO_COLORS[name] || '#dfe1e6';
 }
+
+// Couleur stable (non liée à Trello, qui n'a pas de couleur native pour les listes)
+// générée à partir d'une chaîne — utilisée pour colorer la puce de liste sur les cartes.
+function cdfHashColor(str) {
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  var hue = Math.abs(hash) % 360;
+  return 'hsl(' + hue + ', 55%, 45%)';
+}
+
+// Normalise un nom (minuscules, sans accents) pour des comparaisons fiables
+// quelle que soit la casse ou les accents utilisés.
+function cdfNormalizeName(s) {
+  s = (s || '').trim().toLowerCase();
+  try {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  } catch (e) {
+    return s; // repli si normalize() indisponible dans ce contexte
+  }
+}
+
+// Palette de couleurs fixes pour les listes connues du tableau (Trello ne donne
+// pas de couleur native aux listes). Toute liste absente de cette palette reçoit
+// automatiquement une couleur générée (cdfHashColor), stable mais non choisie à la main.
+var CDF_LIST_COLORS = {
+  'a trier': '#dcb35c',
+  'en redaction': '#5aa9e6',
+  'finalisee': '#7cb342',
+  'mise en page': '#8e6fce',
+  'marbre': '#8c8c8c'
+};
+
+function cdfListColor(listName) {
+  var key = cdfNormalizeName(listName);
+  return CDF_LIST_COLORS[key] || cdfHashColor(listName || key);
+}

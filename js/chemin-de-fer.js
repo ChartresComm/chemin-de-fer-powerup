@@ -18,6 +18,7 @@ var currentZoom = 100;
 var exportBtn = document.getElementById('cdf-export');
 
 var titleInput = document.getElementById('cdf-title');
+var fillStatEl = document.getElementById('cdf-fill-stat');
 var closingDateInput = document.getElementById('cdf-closing-date');
 var distributionDateInput = document.getElementById('cdf-distribution-date');
 
@@ -93,6 +94,14 @@ function renderCardEl(card, interactive) {
     });
   }
   li.appendChild(nameEl);
+
+  if (card.listName) {
+    var listChip = document.createElement('div');
+    listChip.className = 'cdf-card-list-chip';
+    listChip.style.background = cdfListColor(card.listName);
+    listChip.textContent = card.listName;
+    li.appendChild(listChip);
+  }
 
   if (interactive) {
     var dupBtn = document.createElement('button');
@@ -294,6 +303,33 @@ function renderCards() {
   sortUnassignedByLabel();
   populateLabelFilter();
   applyLabelFilter();
+  updateFillStat();
+}
+
+// Compte le nombre de pages (et non de planches) qui ont au moins une carte
+// dessus, sur le total de pages configuré — ex. "46/60 pages".
+function updateFillStat() {
+  if (!fillStatEl) return;
+  var cardsById = {};
+  currentCards.forEach(function (c) { cardsById[c.id] = true; });
+
+  var filledPages = {};
+  (currentLayout.placements || []).forEach(function (p) {
+    if (!cardsById[p.id] || !p.loc || p.loc === 'unassigned') return;
+    var parts = String(p.loc).split('|');
+    var cellIdx = parseInt(parts[0], 10);
+    var zone = parts[1];
+    var cell = currentCells[cellIdx];
+    if (!cell) return;
+    if (zone === 'left') filledPages[cell.pages[0]] = true;
+    else if (zone === 'right') filledPages[cell.pages[1]] = true;
+    else if (zone === 'both') { filledPages[cell.pages[0]] = true; filledPages[cell.pages[1]] = true; }
+    else filledPages[cell.pages[0]] = true; // single (couverture / 4e de couv)
+  });
+
+  var filledCount = Object.keys(filledPages).length;
+  var total = currentConfig.totalPages || 0;
+  fillStatEl.textContent = filledCount + '/' + total + ' pages';
 }
 
 // Trie la liste "Cartes non placées" par nom de première étiquette (alphabétique,
@@ -396,22 +432,20 @@ distributionDateInput.addEventListener('change', saveMetaFromInputs);
 
 function loadCards() {
   return t.lists('id', 'name').catch(function () { return []; }).then(function (lists) {
-    var normalize = function (s) {
-      s = (s || '').trim().toLowerCase();
-      try {
-        return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      } catch (e) {
-        return s; // repli si normalize()/Unicode property escapes indisponibles dans ce contexte
-      }
-    };
-    var targetName = normalize(currentConfig.archivedListName || 'Archivées');
+    var targetName = cdfNormalizeName(currentConfig.archivedListName || 'Archivées');
     var archivedIds = lists.filter(function (l) {
-      return normalize(l.name) === targetName;
+      return cdfNormalizeName(l.name) === targetName;
     }).map(function (l) { return l.id; });
+
+    var listsById = {};
+    lists.forEach(function (l) { listsById[l.id] = l.name; });
 
     return t.cards('id', 'name', 'labels', 'closed', 'idList', 'url').then(function (cards) {
       currentCards = cards.filter(function (c) {
         return !c.closed && archivedIds.indexOf(c.idList) === -1;
+      }).map(function (c) {
+        c.listName = listsById[c.idList] || '';
+        return c;
       });
     });
   }).catch(function (err) {
