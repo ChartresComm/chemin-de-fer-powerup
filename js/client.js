@@ -4,8 +4,8 @@
 /* global TrelloPowerUp */
 
 var ICON = {
-  dark: './icons/icon-white-32.png',
-  light: './icons/icon-color-32.png'
+  dark: './icons/icon-white-16.png',
+  light: './icons/icon-color-16.png'
 };
 
 TrelloPowerUp.initialize({
