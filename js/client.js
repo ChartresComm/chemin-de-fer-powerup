@@ -5,16 +5,15 @@
 
 var ICON = {
   dark: './icons/icon-white-32.png',
-  light: './icons/icon-black-32.png'
+  light: './icons/icon-color-32.png'
 };
 
 TrelloPowerUp.initialize({
 
   // Bouton dans la barre du tableau -> ouvre la vue chemin de fer en plein écran
-  // On reste définitivement sur un texte court : Trello met en cache la réponse
-  // de cette capacité de façon persistante et imprévisible (confirmé : le code
-  // sans texte était bien déployé mais Trello continuait d'afficher l'ancien
-  // texte). Le bouton fonctionne dans tous les cas, seul l'affichage varie.
+  // Le texte est nécessaire (sans lui, Trello n'affiche pas le bouton du tout,
+  // confirmé en conditions réelles). Sa taille/police est fixée par Trello lui-même,
+  // aucun moyen de la modifier depuis le Power-Up.
   'board-buttons': function (t, options) {
     return [{
       icon: ICON,
