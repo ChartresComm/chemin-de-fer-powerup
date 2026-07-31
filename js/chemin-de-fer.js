@@ -10,6 +10,7 @@ var labelFilterSelect = document.getElementById('cdf-label-filter');
 var statusEl = document.getElementById('cdf-status');
 var refreshBtn = document.getElementById('cdf-refresh');
 var settingsBtn = document.getElementById('cdf-settings');
+var lockBtn = document.getElementById('cdf-lock');
 var exportBtn = document.getElementById('cdf-export');
 
 var titleInput = document.getElementById('cdf-title');
@@ -281,11 +282,11 @@ function saveRubrique(index, field, value) {
 }
 
 function buildGrid() {
-  currentCells = buildGridInto(gridEl, currentConfig, currentRubriques, true);
+  currentCells = buildGridInto(gridEl, currentConfig, currentRubriques, !currentConfig.locked);
 }
 
 function renderCards() {
-  renderCardsInto(gridEl, currentCells, currentLayout, currentCards, unassignedListEl, true);
+  renderCardsInto(gridEl, currentCells, currentLayout, currentCards, unassignedListEl, !currentConfig.locked);
   sortUnassignedByLabel();
   populateLabelFilter();
   applyLabelFilter();
@@ -337,6 +338,7 @@ function applyLabelFilter() {
 labelFilterSelect.addEventListener('change', applyLabelFilter);
 
 function initSortable() {
+  if (currentConfig.locked) return; // pas de glisser-déposer possible en mode verrouillé
   document.querySelectorAll('#cdf-grid .cdf-card-list, #unassigned-list').forEach(function (ul) {
     Sortable.create(ul, {
       group: 'cdf-cards',
@@ -422,7 +424,29 @@ function fullRender() {
   buildGrid();
   renderCards();
   initSortable();
+  applyLockUI();
 }
+
+// Reflète l'état verrouillé/déverrouillé sur les boutons qui permettent de
+// modifier le chemin de fer (le glisser-déposer et l'édition des rubriques
+// sont déjà bloqués via le paramètre "interactive" passé à buildGrid/renderCards).
+function applyLockUI() {
+  var locked = !!currentConfig.locked;
+  lockBtn.textContent = locked ? '🔓 Déverrouiller' : '🔒 Verrouiller';
+  lockBtn.title = locked
+    ? 'Le chemin de fer est verrouillé : aucune modification possible. Cliquer pour déverrouiller.'
+    : 'Verrouiller empêche toute modification (glisser-déposer, rubriques, réglages, nouveau chemin de fer).';
+  newBtn.disabled = locked;
+  settingsBtn.disabled = locked;
+}
+
+lockBtn.addEventListener('click', function () {
+  currentConfig.locked = !currentConfig.locked;
+  cdfSaveConfig(t, currentConfig).then(function () {
+    fullRender();
+    setStatus(currentConfig.locked ? 'Chemin de fer verrouillé' : 'Chemin de fer déverrouillé');
+  });
+});
 
 function init() {
   Promise.all([
@@ -443,17 +467,29 @@ function init() {
   });
 }
 
+// Réessaie de relire la config jusqu'à ce qu'elle diffère de l'ancienne valeur
+// (ou jusqu'à épuisement des tentatives), au lieu d'un délai fixe qui s'est
+// montré parfois insuffisant : le temps de propagation du stockage Trello entre
+// deux iframes peut varier.
+function pollForConfigChange(oldConfigStr, attemptsLeft, delayMs) {
+  return cdfGetConfig(t).then(function (config) {
+    if (JSON.stringify(config) !== oldConfigStr || attemptsLeft <= 0) {
+      return config;
+    }
+    return new Promise(function (resolve) { setTimeout(resolve, delayMs); }).then(function () {
+      return pollForConfigChange(oldConfigStr, attemptsLeft - 1, delayMs);
+    });
+  });
+}
+
 settingsBtn.addEventListener('click', function () {
+  var oldConfigStr = JSON.stringify(currentConfig);
   t.popup({
     title: 'Réglages du chemin de fer',
     url: './settings.html',
     height: 400
   }).then(function () {
-    // Léger délai : après la fermeture de la popup, le stockage Trello met parfois
-    // un court instant à propager la dernière écriture entre les deux iframes.
-    return new Promise(function (resolve) { setTimeout(resolve, 400); });
-  }).then(function () {
-    return cdfGetConfig(t);
+    return pollForConfigChange(oldConfigStr, 10, 300); // jusqu'à 3 secondes au total
   }).then(function (config) {
     currentConfig = config;
     return loadCards();
@@ -512,7 +548,15 @@ function buildExportContainer() {
     wrap.appendChild(datesLine);
   }
 
-  wrap.appendChild(gridEl.cloneNode(true));
+  // Grille statique dédiée à l'export (pas un clone de la grille interactive) :
+  // évite les champs <input type="color"/"text"> qui, capturés par html2canvas,
+  // affichaient le code hexadécimal de la couleur en toutes lettres sur le PDF.
+  var exportGrid = document.createElement('div');
+  exportGrid.className = 'cdf-grid';
+  wrap.appendChild(exportGrid);
+  var cells = buildGridInto(exportGrid, currentConfig, currentRubriques, false);
+  renderCardsInto(exportGrid, cells, currentLayout, currentCards, null, false);
+
   document.body.appendChild(wrap);
   return wrap;
 }
