@@ -482,7 +482,7 @@ function init() {
 // la nouvelle valeur (à éviter lors du tout premier chargement).
 function applyZoom(persist) {
   currentZoom = Math.max(50, Math.min(150, currentZoom));
-  document.body.style.zoom = (currentZoom / 100);
+  gridEl.style.zoom = (currentZoom / 100);
   if (zoomValueEl) zoomValueEl.textContent = currentZoom + '%';
   if (persist) cdfSaveZoom(t, currentZoom);
 }
@@ -596,16 +596,12 @@ function buildExportContainer() {
 }
 
 function generateGridCanvas() {
-  var previousZoom = document.body.style.zoom;
-  document.body.style.zoom = 1;
   var wrap = buildExportContainer();
   return html2canvas(wrap, { backgroundColor: '#ffffff', scale: 2 }).then(function (canvas) {
     document.body.removeChild(wrap);
-    document.body.style.zoom = previousZoom;
     return canvas;
   }).catch(function (err) {
     if (wrap.parentNode) document.body.removeChild(wrap);
-    document.body.style.zoom = previousZoom;
     throw err;
   });
 }
