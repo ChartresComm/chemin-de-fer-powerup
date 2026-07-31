@@ -75,6 +75,13 @@ function cdfSaveRubriques(t, rubriques) {
   return t.set('board', 'shared', CDF_RUBRIQUES_KEY, rubriques);
 }
 
+function cdfGetZoom(t) {
+  return t.get('member', 'private', 'cdfZoom', 100);
+}
+function cdfSaveZoom(t, zoom) {
+  return t.set('member', 'private', 'cdfZoom', zoom);
+}
+
 function cdfGetMeta(t) {
   return t.get('board', 'shared', CDF_META_KEY, CDF_DEFAULT_META);
 }

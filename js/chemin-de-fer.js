@@ -11,6 +11,10 @@ var statusEl = document.getElementById('cdf-status');
 var refreshBtn = document.getElementById('cdf-refresh');
 var settingsBtn = document.getElementById('cdf-settings');
 var lockBtn = document.getElementById('cdf-lock');
+var zoomOutBtn = document.getElementById('cdf-zoom-out');
+var zoomInBtn = document.getElementById('cdf-zoom-in');
+var zoomValueEl = document.getElementById('cdf-zoom-value');
+var currentZoom = 100;
 var exportBtn = document.getElementById('cdf-export');
 
 var titleInput = document.getElementById('cdf-title');
@@ -450,13 +454,15 @@ lockBtn.addEventListener('click', function () {
 
 function init() {
   Promise.all([
-    cdfGetConfig(t), cdfGetLayout(t), cdfGetRubriques(t), cdfGetMeta(t), cdfGetHistory(t)
+    cdfGetConfig(t), cdfGetLayout(t), cdfGetRubriques(t), cdfGetMeta(t), cdfGetHistory(t), cdfGetZoom(t)
   ]).then(function (res) {
     currentConfig = res[0];
     currentLayout = res[1];
     currentRubriques = res[2] || {};
     currentMeta = res[3] || {};
     currentHistory = res[4] || [];
+    currentZoom = res[5] || 100;
+    applyZoom(false);
     populateMetaInputs();
     return loadCards();
   }).then(function () {
@@ -466,6 +472,26 @@ function init() {
     setStatus('Erreur au chargement — voir la console');
   });
 }
+
+// Applique le niveau de zoom courant à toute la vue (préférence personnelle,
+// pas partagée avec le reste de l'équipe). `persist` contrôle si on sauvegarde
+// la nouvelle valeur (à éviter lors du tout premier chargement).
+function applyZoom(persist) {
+  currentZoom = Math.max(50, Math.min(150, currentZoom));
+  document.body.style.zoom = (currentZoom / 100);
+  zoomValueEl.textContent = currentZoom + '%';
+  if (persist) cdfSaveZoom(t, currentZoom);
+}
+
+zoomOutBtn.addEventListener('click', function () {
+  currentZoom -= 10;
+  applyZoom(true);
+});
+
+zoomInBtn.addEventListener('click', function () {
+  currentZoom += 10;
+  applyZoom(true);
+});
 
 // Réessaie de relire la config jusqu'à ce qu'elle diffère de l'ancienne valeur
 // (ou jusqu'à épuisement des tentatives), au lieu d'un délai fixe qui s'est
@@ -562,12 +588,16 @@ function buildExportContainer() {
 }
 
 function generateGridCanvas() {
+  var previousZoom = document.body.style.zoom;
+  document.body.style.zoom = 1;
   var wrap = buildExportContainer();
   return html2canvas(wrap, { backgroundColor: '#ffffff', scale: 2 }).then(function (canvas) {
     document.body.removeChild(wrap);
+    document.body.style.zoom = previousZoom;
     return canvas;
   }).catch(function (err) {
     if (wrap.parentNode) document.body.removeChild(wrap);
+    document.body.style.zoom = previousZoom;
     throw err;
   });
 }
