@@ -32,7 +32,8 @@ var CDF_DEFAULT_CONFIG = {
   totalPages: CDF_TEMPLATES['chartres-metropole-60p'].totalPages,
   startPage: 1,
   columns: CDF_TEMPLATES['chartres-metropole-60p'].columns,
-  archivedListName: 'Archivées'
+  archivedListName: 'Archivées',
+  locked: false
 };
 
 var CDF_DEFAULT_META = { title: '', closingDate: '', distributionDate: '' };
