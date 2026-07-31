@@ -130,6 +130,38 @@ button:disabled {
   min-width: 90px;
   text-align: right;
 }
+.cdf-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ebecf0;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+.cdf-zoom-controls button {
+  background: white;
+  border: 1px solid #dfe1e6;
+  border-radius: 3px;
+  width: 22px;
+  height: 22px;
+  line-height: 20px;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: #172b4d;
+}
+.cdf-zoom-controls button:hover {
+  background: #0079bf;
+  color: white;
+  border-color: #0079bf;
+}
+#cdf-zoom-value {
+  font-size: 12px;
+  color: #5e6c84;
+  min-width: 38px;
+  text-align: center;
+}
 
 .cdf-layout {
   display: flex;
