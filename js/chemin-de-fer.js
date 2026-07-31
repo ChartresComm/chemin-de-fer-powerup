@@ -436,21 +436,25 @@ function fullRender() {
 // sont déjà bloqués via le paramètre "interactive" passé à buildGrid/renderCards).
 function applyLockUI() {
   var locked = !!currentConfig.locked;
-  lockBtn.textContent = locked ? '🔓 Déverrouiller' : '🔒 Verrouiller';
-  lockBtn.title = locked
-    ? 'Le chemin de fer est verrouillé : aucune modification possible. Cliquer pour déverrouiller.'
-    : 'Verrouiller empêche toute modification (glisser-déposer, rubriques, réglages, nouveau chemin de fer).';
-  newBtn.disabled = locked;
-  settingsBtn.disabled = locked;
+  if (lockBtn) {
+    lockBtn.textContent = locked ? '🔓 Déverrouiller' : '🔒 Verrouiller';
+    lockBtn.title = locked
+      ? 'Le chemin de fer est verrouillé : aucune modification possible. Cliquer pour déverrouiller.'
+      : 'Verrouiller empêche toute modification (glisser-déposer, rubriques, réglages, nouveau chemin de fer).';
+  }
+  if (newBtn) newBtn.disabled = locked;
+  if (settingsBtn) settingsBtn.disabled = locked;
 }
 
-lockBtn.addEventListener('click', function () {
-  currentConfig.locked = !currentConfig.locked;
-  cdfSaveConfig(t, currentConfig).then(function () {
-    fullRender();
-    setStatus(currentConfig.locked ? 'Chemin de fer verrouillé' : 'Chemin de fer déverrouillé');
+if (lockBtn) {
+  lockBtn.addEventListener('click', function () {
+    currentConfig.locked = !currentConfig.locked;
+    cdfSaveConfig(t, currentConfig).then(function () {
+      fullRender();
+      setStatus(currentConfig.locked ? 'Chemin de fer verrouillé' : 'Chemin de fer déverrouillé');
+    });
   });
-});
+}
 
 function init() {
   Promise.all([
@@ -479,19 +483,23 @@ function init() {
 function applyZoom(persist) {
   currentZoom = Math.max(50, Math.min(150, currentZoom));
   document.body.style.zoom = (currentZoom / 100);
-  zoomValueEl.textContent = currentZoom + '%';
+  if (zoomValueEl) zoomValueEl.textContent = currentZoom + '%';
   if (persist) cdfSaveZoom(t, currentZoom);
 }
 
-zoomOutBtn.addEventListener('click', function () {
-  currentZoom -= 10;
-  applyZoom(true);
-});
+if (zoomOutBtn) {
+  zoomOutBtn.addEventListener('click', function () {
+    currentZoom -= 10;
+    applyZoom(true);
+  });
+}
 
-zoomInBtn.addEventListener('click', function () {
-  currentZoom += 10;
-  applyZoom(true);
-});
+if (zoomInBtn) {
+  zoomInBtn.addEventListener('click', function () {
+    currentZoom += 10;
+    applyZoom(true);
+  });
+}
 
 // Réessaie de relire la config jusqu'à ce qu'elle diffère de l'ancienne valeur
 // (ou jusqu'à épuisement des tentatives), au lieu d'un délai fixe qui s'est
