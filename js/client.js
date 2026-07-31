@@ -11,12 +11,14 @@ var ICON = {
 TrelloPowerUp.initialize({
 
   // Bouton dans la barre du tableau -> ouvre la vue chemin de fer en plein écran
-  // Nouvel essai sans texte (icône noire) maintenant que la vraie cause du bouton
-  // manquant a été identifiée : la capacité board-buttons n'était pas activée
-  // dans l'admin Trello, pas un problème de code.
+  // On reste définitivement sur un texte court : Trello met en cache la réponse
+  // de cette capacité de façon persistante et imprévisible (confirmé : le code
+  // sans texte était bien déployé mais Trello continuait d'afficher l'ancien
+  // texte). Le bouton fonctionne dans tous les cas, seul l'affichage varie.
   'board-buttons': function (t, options) {
     return [{
       icon: ICON,
+      text: 'CDF',
       callback: function (t) {
         return t.modal({
           url: './chemin-de-fer.html',
