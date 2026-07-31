@@ -52,6 +52,10 @@ body {
   cursor: pointer;
   font-size: 13px;
 }
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .mod-danger {
   background: #ffefec;
   color: #ae2a19;
