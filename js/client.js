@@ -4,8 +4,8 @@
 /* global TrelloPowerUp */
 
 var ICON = {
-  dark: './icons/icon-white-16.png',
-  light: './icons/icon-color-16.png'
+  dark: 'https://chartrescomm.github.io/chemin-de-fer-powerup/icons/icon-white-16.png',
+  light: 'https://chartrescomm.github.io/chemin-de-fer-powerup/icons/icon-color-16.png'
 };
 
 TrelloPowerUp.initialize({
