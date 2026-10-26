@@ -1,5 +1,14 @@
 # Power-Up « Chemin de fer » pour Trello
 
+## Nouveautés de cette version
+
+- **Déplacer une double page entière** : poignée « ⠿ » à gauche du bandeau de rubrique. Les cartes et la rubrique suivent le bloc, la pagination (p.4-5, p.6-7…) se recalcule automatiquement. Couverture et 4e de couverture restent fixes.
+- **Couleurs des listes (puces sur les cartes)** : À lancer = jaune, En rédaction = bleu clair, À mettre en page = vert pomme, Finalisé = violet lila, Marbre = gris.
+- **Taux de remplissage** (« 46/60 pages ») désormais affiché en haut, et repris dans le PDF.
+- **Export PDF refait** : vrai PDF vectoriel A3 paysage (texte net, léger), avec titre, dates, remplissage et couleurs de listes.
+- **Réglages** : dialogue intégré à la vue ; « Enregistrer » met à jour le chemin de fer immédiatement. Le verrouillage n'est plus perdu à l'enregistrement.
+- Plus d'espace entre les planches ; tailles de texte réduites d'un cran ; icône du manifest corrigée.
+
 ## Ce que fait ce Power-Up
 
 - Bouton **« Chemin de fer »** dans la barre du tableau → grille plein écran des pages de la publication.
@@ -8,7 +17,11 @@
 - **Rubriques** : chaque planche a un champ de titre libre + une pastille de couleur de fond, tous deux modifiables directement.
 - **Titre + dates** : un champ titre en haut de la vue, une date de bouclage et une date de distribution.
 - **Cartes archivées invisibles** : les cartes déplacées dans une liste nommée « Archivées » (nom modifiable dans les réglages) disparaissent automatiquement du chemin de fer.
-- **Export PDF** : inclut le titre et les dates de bouclage/distribution en en-tête, en plus de la grille complète.
+- **Export PDF** : inclut le titre et les dates de bouclage/distribution en en-tête, en plus de la grille complète (rendu en lecture seule, sans les codes couleur hexadécimaux qui pouvaient apparaître dans une version précédente).
+- **Verrouillage** : un bouton « 🔒 Verrouiller » dans l'en-tête bloque toute modification (glisser-déposer, rubriques, réglages, nouveau chemin de fer) — utile une fois le numéro bouclé, pour éviter les modifications accidentelles. « 🔓 Déverrouiller » pour revenir en mode édition.
+- **Zoom** : boutons "−" / "+" dans l'en-tête (de 50% à 150%) pour adapter la taille de la grille des planches à ta résolution d'écran. Préférence personnelle (non partagée avec l'équipe). Fonctionne dans les navigateurs basés sur Chromium (Chrome, Edge, l'appli desktop Trello) ; peut ne pas s'appliquer dans Firefox ou Safari.
+- **Taux de remplissage** : indicateur dans l'en-tête ("46/60 pages") comptant le nombre de pages ayant au moins une carte dessus, sur le total configuré.
+- **Liste d'origine** : chaque carte affiche une petite puce colorée avec le nom de la liste Trello dans laquelle elle se trouve (couleur générée automatiquement par carte, Trello ne propose pas de couleur native pour les listes).
 - **Nouveau chemin de fer** : archive le numéro en cours (titre, dates, disposition, cartes) dans un historique interne au Power-Up, puis repart soit du même modèle de pagination (planches vidées) — **rubriques conservées** dans ce cas — soit de zéro (rubriques réinitialisées aussi).
 - **Historique** : liste tous les anciens chemins de fer archivés ; « Consulter » affiche leur disposition telle qu'elle était au moment de l'archivage (lecture seule). Un bouton **« Supprimer tout l'historique »** permet d'effacer définitivement toutes les archives (avec confirmation).
 - **Dupliquer une carte** : chaque carte affiche un petit bouton « ⧉ » en haut à droite. Cliquer dessus crée une copie de cette carte dans « Cartes non placées », que tu peux ensuite glisser sur une autre planche. Utile pour :
@@ -27,6 +40,10 @@
 
 Sans la création automatique de carte, voici une alternative simple et manuelle : après avoir archivé un numéro, clique sur "Exporter en PDF" (avant ou après avoir cliqué "Nouveau chemin de fer" selon ce qui t'arrange) puis attache toi-même ce PDF à une carte de ton choix — par exemple dans une liste "Éditions" que tu crées une fois pour toutes. Moins automatique, mais beaucoup plus simple et sans dépendance technique fragile.
 
+## ⚠️ Point important si tu modifies l'icône du bouton un jour
+
+Les icônes du bouton de la barre du tableau (`board-buttons`) sont rendues **directement dans la page Trello**, pas dans notre iframe. Un chemin relatif (`./icons/...`) s'y résout par rapport à `trello.com` et non à ton hébergement — l'icône reste introuvable silencieusement (aucune erreur console), le bouton peut même disparaître entièrement selon les cas. Dans `js/client.js`, ces icônes utilisent donc des **URLs absolues** (`https://ton-compte.github.io/.../icons/...`) — pense à les mettre à jour si tu changes de dépôt ou de nom d'utilisateur GitHub.
+
 ## Étape 1 — Héberger le code sur GitHub Pages
 
 1. Crée un nouveau dépôt GitHub (public), par exemple `chemin-de-fer-powerup`.
@@ -41,6 +58,7 @@ Si c'est déjà fait lors d'une version précédente, il n'y a rien à refaire i
 1. Va sur https://trello.com/power-ups/admin
 2. Renseigne l'URL de l'iframe (connector) : `https://<ton-url-github-pages>/index.html`
 3. Les capacités (`board-buttons`, `show-settings`) sont déclarées automatiquement par le code — rien à faire de plus dans l'admin.
+4. Pour le champ **"Icône"** de la fiche Power-Up (144×144, noire), utilise le fichier `icons/icon-144.png` inclus dans cette archive. Utilise bien son URL en `https://` une fois hébergé sur GitHub Pages (jamais en `http://`).
 
 ## Étape 3 — Activer le Power-Up sur un tableau
 
@@ -64,6 +82,7 @@ index.html          Connector principal, déclare les capacités
 chemin-de-fer.html   Vue plein écran (la grille)
 settings.html        Réglages (modèle / pagination / liste archivée)
 js/client.js         Déclaration des capacités Trello (badges, bouton, réglages)
+js/pdf.js            Utilitaires PDF (nettoyage du texte)
 js/common.js         Lecture/écriture du stockage partagé + modèles
 js/chemin-de-fer.js  Rendu de la grille + glisser-déposer + export + historique
 js/settings.js       Logique des réglages
