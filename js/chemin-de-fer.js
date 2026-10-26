@@ -843,29 +843,88 @@ exportBtn.addEventListener('click', function () {
 
 // --- Nouveau chemin de fer (archivage figé dans l'historique + reset) ---
 
+function isQuotaError(err) {
+  return /exceed|length|too (large|long)/i.test(String(err && err.message ? err.message : err));
+}
+
+// Enregistre l'instantané + l'index d'historique. Si Trello refuse (limite de 8192
+// caractères pour tout le tableau), on supprime les plus anciens archives un à un
+// jusqu'à ce que ça passe ; en dernier recours on garde juste titre + dates.
+function storeArchive(entry, snapshot) {
+  function attempt(withSnapshot) {
+    var history = currentHistory.concat([entry]);
+    var p = withSnapshot ? cdfSaveIssueSnapshot(t, entry.id, snapshot) : Promise.resolve();
+    return p.then(function () {
+      return cdfSaveHistory(t, history);
+    }).then(function () {
+      currentHistory = history;
+      return { pruned: 0 };
+    });
+  }
+  function dropOldestThen(retry, pruned) {
+    var oldest = currentHistory[0];
+    var rest = currentHistory.slice(1);
+    return cdfRemoveIssueSnapshot(t, oldest.id).then(function () {
+      return cdfSaveHistory(t, rest);
+    }).then(function () {
+      currentHistory = rest;
+      return retry(pruned + 1);
+    });
+  }
+  function run(pruned) {
+    return attempt(true).then(function (r) { r.pruned = pruned; return r; }).catch(function (err) {
+      if (!isQuotaError(err)) throw err;
+      cdfRemoveIssueSnapshot(t, entry.id);
+      if (currentHistory.length) return dropOldestThen(run, pruned);
+      // Plus rien à supprimer : on garde seulement titre + dates (sans la grille)
+      return attempt(false).then(function (r) { r.pruned = pruned; r.light = true; return r; });
+    });
+  }
+  return run(0);
+}
+
 function archiveCurrentAndReset(newTitle, base) {
   setStatus('Archivage…');
 
+  // Le PDF du numéro qui se termine est téléchargé automatiquement : c'est l'archive complète.
+  try {
+    var pdfDoc = exportPdf();
+    pdfDoc.save((currentMeta.title ? currentMeta.title.replace(/[^a-z0-9\-_]+/gi, '_') : 'chemin-de-fer') + '.pdf');
+  } catch (e) {
+    console.error('PDF d\'archive non généré', e);
+  }
+
   var issueId = 'issue-' + Date.now();
-  var compactCards = currentCards.map(function (c) {
-    return { i: c.id, n: c.name, c: (c.labels || []).map(function (l) { return l.color; }) };
+  // Instantané compact : seules les cartes placées sont conservées, noms raccourcis
+  var placedIds = {};
+  ((currentLayout && currentLayout.placements) || []).forEach(function (p) {
+    if (p.loc && p.loc !== 'unassigned') placedIds[p.id] = true;
+  });
+  var compactCards = currentCards.filter(function (c) { return placedIds[c.id]; }).map(function (c) {
+    return { i: c.id, n: String(c.name).slice(0, 60), c: (c.labels || []).map(function (l) { return l.color; }) };
   });
   var snapshot = {
     config: currentConfig,
-    layout: currentLayout,
+    layout: {
+      placements: ((currentLayout && currentLayout.placements) || []).filter(function (p) {
+        return p.loc && p.loc !== 'unassigned';
+      })
+    },
     rubriques: currentRubriques,
     cardsSnapshot: compactCards
   };
+  var entry = {
+    id: issueId,
+    title: currentMeta.title || 'Sans titre',
+    closingDate: currentMeta.closingDate || '',
+    distributionDate: currentMeta.distributionDate || '',
+    savedAt: new Date().toISOString()
+  };
 
-  return cdfSaveIssueSnapshot(t, issueId, snapshot).then(function () {
-    currentHistory = currentHistory.concat([{
-      id: issueId,
-      title: currentMeta.title || 'Sans titre',
-      closingDate: currentMeta.closingDate || '',
-      distributionDate: currentMeta.distributionDate || '',
-      savedAt: new Date().toISOString()
-    }]);
-    return cdfSaveHistory(t, currentHistory);
+  var archiveResult = null;
+  return storeArchive(entry, snapshot).then(function (r) {
+    archiveResult = r;
+    return null;
   }).then(function () {
     if (base === 'scratch') {
       currentConfig = JSON.parse(JSON.stringify(CDF_DEFAULT_CONFIG));
@@ -889,7 +948,10 @@ function archiveCurrentAndReset(newTitle, base) {
   }).then(function () {
     fullRender();
     newOverlay.classList.remove('cdf-overlay-visible');
-    setStatus('Nouveau chemin de fer créé');
+    var note = '';
+    if (archiveResult && archiveResult.light) note = ' — grille trop volumineuse pour l’historique : seul le PDF fait foi';
+    else if (archiveResult && archiveResult.pruned) note = ' — ' + archiveResult.pruned + ' ancienne(s) archive(s) supprimée(s) (limite Trello)';
+    setStatus('Nouveau chemin de fer créé' + note);
   }).catch(function (err) {
     console.error(err);
     setStatus('Erreur : ' + (err && err.message ? err.message : 'échec'));

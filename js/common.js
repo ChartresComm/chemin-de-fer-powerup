@@ -100,11 +100,21 @@ function cdfSaveHistory(t, history) {
 // Instantané complet d'une édition (disposition, rubriques, cartes), stocké
 // sous sa propre clé pour ne jamais faire grossir une seule valeur au-delà
 // de la limite Trello de 4096 caractères par clé.
+// Trello limite à 8192 caractères TOUTES les données partagées d'un tableau pour ce
+// Power-Up réunies (config + disposition + rubriques + historique...). Les instantanés
+// sont donc compressés (lz-string, si disponible) pour en faire tenir plus.
 function cdfGetIssueSnapshot(t, issueId) {
-  return t.get('board', 'shared', 'cdfIssue_' + issueId, null);
+  return t.get('board', 'shared', 'cdfIssue_' + issueId, null).then(function (raw) {
+    if (raw && raw.z && typeof LZString !== 'undefined') {
+      try { return JSON.parse(LZString.decompressFromBase64(raw.z)); } catch (e) { return null; }
+    }
+    return raw;
+  });
 }
 function cdfSaveIssueSnapshot(t, issueId, snapshot) {
-  return t.set('board', 'shared', 'cdfIssue_' + issueId, snapshot);
+  var value = snapshot;
+  if (typeof LZString !== 'undefined') value = { z: LZString.compressToBase64(JSON.stringify(snapshot)) };
+  return t.set('board', 'shared', 'cdfIssue_' + issueId, value);
 }
 function cdfRemoveIssueSnapshot(t, issueId) {
   return t.remove('board', 'shared', 'cdfIssue_' + issueId).catch(function () {
