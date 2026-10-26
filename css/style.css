@@ -18,7 +18,7 @@ body {
 #settings-form label {
   display: block;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
   margin: 12px 0 4px;
   text-transform: uppercase;
   color: #5e6c84;
@@ -30,7 +30,7 @@ body {
   padding: 6px 8px;
   border: 1px solid #dfe1e6;
   border-radius: 3px;
-  font-size: 14px;
+  font-size: 13px;
 }
 #settings-form button {
   margin-top: 16px;
@@ -50,7 +50,7 @@ body {
   padding: 6px 12px;
   border-radius: 3px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
 }
 button:disabled {
   opacity: 0.45;
@@ -63,7 +63,7 @@ button:disabled {
   padding: 6px 12px;
   border-radius: 3px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   margin-right: auto;
 }
 .mod-danger:hover {
@@ -93,7 +93,7 @@ button:disabled {
   flex-wrap: wrap;
 }
 .cdf-title-input {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   border: 1px solid transparent;
   border-radius: 3px;
@@ -106,17 +106,25 @@ button:disabled {
   outline: none;
 }
 .cdf-date-label {
-  font-size: 11px;
+  font-size: 10px;
   color: #5e6c84;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+.cdf-fill-stat {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5e6c84;
+  background: #ebecf0;
+  border-radius: 3px;
+  padding: 4px 10px;
+}
 .cdf-date-label input {
   border: 1px solid #dfe1e6;
   border-radius: 3px;
   padding: 3px 5px;
-  font-size: 12px;
+  font-size: 11px;
 }
 .cdf-header-actions {
   display: flex;
@@ -125,7 +133,7 @@ button:disabled {
   flex-wrap: wrap;
 }
 .cdf-status {
-  font-size: 12px;
+  font-size: 11px;
   color: #5e6c84;
   min-width: 90px;
   text-align: right;
@@ -147,7 +155,7 @@ button:disabled {
   line-height: 20px;
   padding: 0;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #172b4d;
 }
@@ -157,7 +165,7 @@ button:disabled {
   border-color: #0079bf;
 }
 #cdf-zoom-value {
-  font-size: 12px;
+  font-size: 11px;
   color: #5e6c84;
   min-width: 38px;
   text-align: center;
@@ -180,7 +188,7 @@ button:disabled {
   top: 64px;
 }
 .cdf-sidebar h2 {
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
   color: #5e6c84;
   margin: 4px 4px 10px;
@@ -192,14 +200,14 @@ button:disabled {
   padding: 5px 6px;
   border: 1px solid #dfe1e6;
   border-radius: 3px;
-  font-size: 12px;
+  font-size: 11px;
   background: white;
 }
 
 .cdf-grid {
   flex: 1;
   display: grid;
-  gap: 12px;
+  gap: 32px 26px;
 }
 
 .cdf-cell {
@@ -212,7 +220,7 @@ button:disabled {
   flex-direction: column;
 }
 .cdf-cell-header {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #5e6c84;
   text-transform: uppercase;
@@ -229,14 +237,14 @@ button:disabled {
   margin-bottom: 6px;
 }
 .cdf-cell-pagelabel {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: #5e6c84;
   flex: 0 0 auto;
 }
 .cdf-rubrique-title-input {
   flex: 1;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   min-height: 20px;
   border: 1px solid transparent;
@@ -252,7 +260,7 @@ button:disabled {
 }
 .cdf-rubrique-title-static {
   flex: 1;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 .cdf-rubrique-color {
@@ -302,7 +310,7 @@ button:disabled {
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 8px;
+  font-size: 7px;
   color: #6b8cae;
   font-weight: 700;
   text-transform: uppercase;
@@ -319,7 +327,7 @@ button:disabled {
   min-height: 40px;
 }
 .cdf-zone-footer {
-  font-size: 9px;
+  font-size: 8px;
   color: #97a0af;
   text-align: center;
   font-weight: 700;
@@ -334,7 +342,7 @@ button:disabled {
   gap: 4px;
 }
 .cdf-status-pill {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: #172b4d;
   border-radius: 8px;
@@ -353,7 +361,7 @@ button:disabled {
   height: 20px;
   border-radius: 50%;
   color: white;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -375,7 +383,7 @@ button:disabled {
   margin-bottom: 6px;
   cursor: grab;
   border: 1px solid #dfe1e6;
-  font-size: 12px;
+  font-size: 11px;
   position: relative;
 }
 .cdf-card-duplicate-btn {
@@ -390,7 +398,7 @@ button:disabled {
   border-radius: 3px;
   background: white;
   color: #5e6c84;
-  font-size: 11px;
+  font-size: 10px;
   cursor: pointer;
 }
 .cdf-card-duplicate-btn:hover {
@@ -410,7 +418,7 @@ button:disabled {
   border-radius: 3px;
   background: white;
   color: #5e6c84;
-  font-size: 11px;
+  font-size: 10px;
   cursor: pointer;
 }
 .cdf-card-remove-btn:hover {
@@ -434,6 +442,17 @@ button:disabled {
 }
 .cdf-card-name {
   line-height: 1.3;
+}
+.cdf-card-list-chip {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 8px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 .cdf-card-name-link {
   cursor: pointer;
@@ -472,13 +491,13 @@ button:disabled {
   margin-top: 0;
 }
 .cdf-overlay-hint {
-  font-size: 12px;
+  font-size: 11px;
   color: #5e6c84;
 }
 .cdf-overlay-box label {
   display: block;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
   margin: 12px 0 4px;
   text-transform: uppercase;
   color: #5e6c84;
@@ -490,7 +509,7 @@ button:disabled {
   padding: 6px 8px;
   border: 1px solid #dfe1e6;
   border-radius: 3px;
-  font-size: 14px;
+  font-size: 13px;
 }
 .cdf-overlay-actions {
   margin-top: 18px;
@@ -520,14 +539,32 @@ button:disabled {
   gap: 2px;
 }
 .cdf-history-item-info span {
-  font-size: 12px;
+  font-size: 11px;
   color: #5e6c84;
 }
 .cdf-history-empty {
   color: #5e6c84;
-  font-size: 13px;
+  font-size: 12px;
   padding: 10px 4px;
 }
 .cdf-grid-readonly .cdf-card {
   cursor: default;
+}
+
+/* Déplacement d'une double page entière */
+.cdf-cell-handle {
+  cursor: grab;
+  font-size: 14px;
+  line-height: 1;
+  color: #5e6c84;
+  padding: 0 2px;
+  user-select: none;
+  flex: 0 0 auto;
+}
+.cdf-cell-handle:hover {
+  color: #0079bf;
+}
+.cdf-cell-ghost {
+  opacity: 0.4;
+  outline: 2px dashed #0079bf;
 }
