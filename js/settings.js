@@ -26,7 +26,9 @@ templateSelect.addEventListener('change', function () {
   columnsInput.value = tpl.columns;
 });
 
+var loadedConfig = {};
 cdfGetConfig(t).then(function (config) {
+  loadedConfig = config || {};
   templateSelect.value = config.template || 'chartres-metropole-60p';
   totalPagesInput.value = config.totalPages;
   columnsInput.value = config.columns;
@@ -38,13 +40,13 @@ cdfGetConfig(t).then(function (config) {
 form.addEventListener('submit', function (e) {
   e.preventDefault();
 
-  var newConfig = {
+  var newConfig = Object.assign({}, loadedConfig, {
     template: templateSelect.value,
     totalPages: parseInt(totalPagesInput.value, 10) || CDF_DEFAULT_CONFIG.totalPages,
     columns: parseInt(columnsInput.value, 10) || CDF_DEFAULT_CONFIG.columns,
     startPage: parseInt(startPageInput.value, 10) || 1,
     archivedListName: (archivedListNameInput.value || 'Archivées').trim()
-  };
+  });
 
   cdfSaveConfig(t, newConfig).then(function () {
     t.closePopup();

@@ -1,6 +1,6 @@
 // chemin-de-fer.js
 
-/* global TrelloPowerUp, Sortable, html2canvas, jspdf */
+/* global TrelloPowerUp, Sortable, jspdf, CdfPdf */
 
 var t = TrelloPowerUp.iframe();
 
@@ -98,7 +98,9 @@ function renderCardEl(card, interactive) {
   if (card.listName) {
     var listChip = document.createElement('div');
     listChip.className = 'cdf-card-list-chip';
-    listChip.style.background = cdfListColor(card.listName);
+    var chipColor = cdfListColor(card.listName);
+    listChip.style.background = chipColor;
+    listChip.style.color = cdfTextOn(chipColor);
     listChip.textContent = card.listName;
     li.appendChild(listChip);
   }
@@ -189,12 +191,23 @@ function buildGridInto(container, config, rubriques, interactive) {
   cells.forEach(function (cell, i) {
     var cellDiv = document.createElement('div');
     cellDiv.className = 'cdf-cell';
+    cellDiv.setAttribute('data-index', String(i));
+    var movable = interactive && cell.pages.length === 2;
+    if (movable) cellDiv.classList.add('cdf-cell-movable');
 
     var saved = rubriques[String(i)] || {};
 
     var rubriqueBar = document.createElement('div');
     rubriqueBar.className = 'cdf-rubrique';
     rubriqueBar.style.background = saved.color || '#eef0f3';
+
+    if (movable) {
+      var handle = document.createElement('span');
+      handle.className = 'cdf-cell-handle';
+      handle.title = 'Glisser pour déplacer toute la double page (cartes et rubrique comprises) — la pagination se met à jour';
+      handle.textContent = '⠿';
+      rubriqueBar.appendChild(handle);
+    }
 
     var pageLabel = document.createElement('span');
     pageLabel.className = 'cdf-cell-pagelabel';
@@ -380,6 +393,7 @@ labelFilterSelect.addEventListener('change', applyLabelFilter);
 function initSortable() {
   if (currentConfig.locked) return; // pas de glisser-déposer possible en mode verrouillé
   document.querySelectorAll('#cdf-grid .cdf-card-list, #unassigned-list').forEach(function (ul) {
+    if (Sortable.get(ul)) return; // évite les doublons d'écouteurs
     Sortable.create(ul, {
       group: 'cdf-cards',
       animation: 150,
@@ -387,6 +401,59 @@ function initSortable() {
       onEnd: saveLayoutFromDom
     });
   });
+
+  // Déplacement de blocs double page entiers (via la poignée ⠿). Seules les doubles
+  // pages sont déplaçables entre elles : couverture et 4e de couverture restent fixes.
+  if (!Sortable.get(gridEl)) {
+    Sortable.create(gridEl, {
+      animation: 150,
+      draggable: '.cdf-cell-movable',
+      handle: '.cdf-cell-handle',
+      ghostClass: 'cdf-cell-ghost',
+      onMove: function (evt) {
+        return evt.related.classList.contains('cdf-cell-movable');
+      },
+      onEnd: onCellsReordered
+    });
+  }
+}
+
+// Après un déplacement de double page : les rubriques et les cartes suivent leur bloc,
+// la numérotation des pages (calculée selon la position) change automatiquement.
+function onCellsReordered() {
+  var order = Array.prototype.map.call(gridEl.children, function (el) {
+    return parseInt(el.getAttribute('data-index'), 10);
+  });
+  var changed = order.some(function (oldIdx, newIdx) { return oldIdx !== newIdx; });
+  if (!changed) return;
+
+  var map = {};
+  order.forEach(function (oldIdx, newIdx) { map[oldIdx] = newIdx; });
+
+  var newRubriques = {};
+  Object.keys(currentRubriques).forEach(function (key) {
+    var o = parseInt(key, 10);
+    if (o in map) newRubriques[String(map[o])] = currentRubriques[key];
+  });
+
+  var newPlacements = ((currentLayout && currentLayout.placements) || []).map(function (p) {
+    if (!p.loc || p.loc === 'unassigned') return p;
+    var parts = String(p.loc).split('|');
+    var o = parseInt(parts[0], 10);
+    return { id: p.id, loc: (o in map ? map[o] : o) + '|' + parts[1] };
+  });
+
+  currentRubriques = newRubriques;
+  currentLayout = { placements: newPlacements };
+  Promise.all([
+    cdfSaveRubriques(t, currentRubriques),
+    cdfSaveLayout(t, currentLayout)
+  ]).then(function () {
+    setStatus('Double page déplacée — pagination mise à jour');
+  }).catch(function () {
+    setStatus('Erreur de sauvegarde');
+  });
+  fullRender();
 }
 
 function saveLayoutFromDom() {
@@ -535,35 +602,60 @@ if (zoomInBtn) {
   });
 }
 
-// Réessaie de relire la config jusqu'à ce qu'elle diffère de l'ancienne valeur
-// (ou jusqu'à épuisement des tentatives), au lieu d'un délai fixe qui s'est
-// montré parfois insuffisant : le temps de propagation du stockage Trello entre
-// deux iframes peut varier.
-function pollForConfigChange(oldConfigStr, attemptsLeft, delayMs) {
-  return cdfGetConfig(t).then(function (config) {
-    if (JSON.stringify(config) !== oldConfigStr || attemptsLeft <= 0) {
-      return config;
-    }
-    return new Promise(function (resolve) { setTimeout(resolve, delayMs); }).then(function () {
-      return pollForConfigChange(oldConfigStr, attemptsLeft - 1, delayMs);
-    });
-  });
-}
+// Réglages : dialogue intégré à la vue (plutôt qu'une popup Trello séparée), pour que
+// « Enregistrer » mette à jour le chemin de fer immédiatement, sans attendre le stockage.
+var sxOverlay = document.getElementById('cdf-settings-overlay');
+var sxTemplate = document.getElementById('sx-template');
+var sxTotal = document.getElementById('sx-total');
+var sxColumns = document.getElementById('sx-columns');
+var sxStart = document.getElementById('sx-start');
+var sxArchived = document.getElementById('sx-archived');
+
+Object.keys(CDF_TEMPLATES).forEach(function (key) {
+  var opt = document.createElement('option');
+  opt.value = key;
+  opt.textContent = CDF_TEMPLATES[key].label;
+  sxTemplate.appendChild(opt);
+});
+sxTemplate.addEventListener('change', function () {
+  var tpl = CDF_TEMPLATES[sxTemplate.value];
+  if (!tpl) return;
+  sxTotal.value = tpl.totalPages;
+  sxColumns.value = tpl.columns;
+});
 
 settingsBtn.addEventListener('click', function () {
-  var oldConfigStr = JSON.stringify(currentConfig);
-  t.popup({
-    title: 'Réglages du chemin de fer',
-    url: './settings.html',
-    height: 400
-  }).then(function () {
-    return pollForConfigChange(oldConfigStr, 10, 300); // jusqu'à 3 secondes au total
-  }).then(function (config) {
-    currentConfig = config;
+  sxTemplate.value = currentConfig.template || 'chartres-metropole-60p';
+  sxTotal.value = currentConfig.totalPages;
+  sxColumns.value = currentConfig.columns;
+  sxStart.value = currentConfig.startPage || 1;
+  sxArchived.value = currentConfig.archivedListName || 'Archivées';
+  sxOverlay.classList.add('cdf-overlay-visible');
+});
+
+document.getElementById('sx-cancel').addEventListener('click', function () {
+  sxOverlay.classList.remove('cdf-overlay-visible');
+});
+
+document.getElementById('sx-save').addEventListener('click', function () {
+  var total = parseInt(sxTotal.value, 10) || CDF_DEFAULT_CONFIG.totalPages;
+  currentConfig = Object.assign({}, currentConfig, {
+    template: sxTemplate.value,
+    totalPages: Math.max(2, Math.min(200, total)),
+    columns: Math.max(1, Math.min(12, parseInt(sxColumns.value, 10) || CDF_DEFAULT_CONFIG.columns)),
+    startPage: Math.max(1, parseInt(sxStart.value, 10) || 1),
+    archivedListName: (sxArchived.value || 'Archivées').trim()
+  });
+  sxOverlay.classList.remove('cdf-overlay-visible');
+  setStatus('Application des réglages…');
+  cdfSaveConfig(t, currentConfig).then(function () {
     return loadCards();
   }).then(function () {
     fullRender();
     setStatus('Réglages appliqués');
+  }).catch(function (err) {
+    console.error(err);
+    setStatus('Erreur de sauvegarde des réglages');
   });
 });
 
@@ -587,80 +679,166 @@ function formatDate(d) {
   return parts[2] + '/' + parts[1] + '/' + parts[0];
 }
 
-function buildExportContainer() {
-  var wrap = document.createElement('div');
-  wrap.style.position = 'fixed';
-  wrap.style.top = '-99999px';
-  wrap.style.left = '0';
-  wrap.style.background = '#ffffff';
-  wrap.style.padding = '20px';
-  wrap.style.width = gridEl.scrollWidth + 'px';
-  wrap.style.fontFamily = getComputedStyle(document.body).fontFamily;
+// Dessine la grille directement en PDF vectoriel (texte net et sélectionnable),
+// au format A3 paysage, avec saut de page entre les lignes de planches si nécessaire.
+function exportPdf() {
+  var cells = cdfComputeCells(currentConfig);
+  var cols = Math.max(1, currentConfig.columns || 5);
+  var M = 10, GAP = 5, PAD = 1.5, ZGAP = 1, BOTH_W = 15, BAR_H = 6, FOOT_H = 3.5;
+  var doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+  var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+  var cw = (W - 2 * M - (cols - 1) * GAP) / cols;
+  var clean = CdfPdf.clean;
 
-  var h1 = document.createElement('div');
-  h1.style.fontSize = '20px';
-  h1.style.fontWeight = '700';
-  h1.style.marginBottom = '4px';
-  h1.textContent = currentMeta.title || 'Chemin de fer';
-  wrap.appendChild(h1);
+  var cardsById = {};
+  currentCards.forEach(function (c) { cardsById[c.id] = c; });
+  var byLoc = {};
+  ((currentLayout && currentLayout.placements) || []).forEach(function (p) {
+    if (!cardsById[p.id] || !p.loc || p.loc === 'unassigned') return;
+    (byLoc[p.loc] = byLoc[p.loc] || []).push(cardsById[p.id]);
+  });
 
-  var dateParts = [];
-  if (currentMeta.closingDate) dateParts.push('Bouclage : ' + formatDate(currentMeta.closingDate));
-  if (currentMeta.distributionDate) dateParts.push('Distribution : ' + formatDate(currentMeta.distributionDate));
-  if (dateParts.length) {
-    var datesLine = document.createElement('div');
-    datesLine.style.fontSize = '13px';
-    datesLine.style.color = '#5e6c84';
-    datesLine.style.marginBottom = '16px';
-    datesLine.textContent = dateParts.join('   •   ');
-    wrap.appendChild(datesLine);
+  function measure(card, w) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5);
+    var lines = doc.splitTextToSize(clean(card.name) || '(sans titre)', w - 2);
+    var hasLabels = card.labels && card.labels.length;
+    return { lines: lines, h: 1 + (hasLabels ? 2.2 : 0) + lines.length * 2.75 + (card.listName ? 3.6 : 0) + 0.6 };
   }
 
-  // Grille statique dédiée à l'export (pas un clone de la grille interactive) :
-  // évite les champs <input type="color"/"text"> qui, capturés par html2canvas,
-  // affichaient le code hexadécimal de la couleur en toutes lettres sur le PDF.
-  var exportGrid = document.createElement('div');
-  exportGrid.className = 'cdf-grid';
-  wrap.appendChild(exportGrid);
-  var cells = buildGridInto(exportGrid, currentConfig, currentRubriques, false);
-  renderCardsInto(exportGrid, cells, currentLayout, currentCards, null, false);
+  function drawCard(card, m, x, y, w) {
+    doc.setFillColor('#f4f5f7'); doc.setDrawColor('#dfe1e6'); doc.setLineWidth(0.15);
+    doc.roundedRect(x, y, w, m.h, 0.8, 0.8, 'FD');
+    var ty = y + 1;
+    if (card.labels && card.labels.length) {
+      card.labels.forEach(function (l, k) {
+        doc.setFillColor(cdfColorToHex(l.color));
+        doc.roundedRect(x + 1 + k * 5.2, ty, 4.6, 1.3, 0.6, 0.6, 'F');
+      });
+      ty += 2.2;
+    }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor('#172b4d');
+    doc.text(m.lines, x + 1, ty, { baseline: 'top', lineHeightFactor: 1.2 });
+    ty += m.lines.length * 2.75 + 0.4;
+    if (card.listName) {
+      var col = cdfListColor(card.listName);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(4.5);
+      var txt = clean(card.listName).toUpperCase();
+      var maxW = w - 2 - 2.4;
+      while (txt.length > 1 && doc.getTextWidth(txt) > maxW) txt = txt.slice(0, -1);
+      var cwid = doc.getTextWidth(txt) + 2.4;
+      doc.setFillColor(col); doc.roundedRect(x + 1, ty, cwid, 2.6, 1.3, 1.3, 'F');
+      doc.setTextColor(cdfTextOn(col));
+      doc.text(txt, x + 1 + 1.2, ty + 1.3, { baseline: 'middle' });
+    }
+  }
 
-  document.body.appendChild(wrap);
-  return wrap;
-}
-
-function generateGridCanvas() {
-  var wrap = buildExportContainer();
-  return html2canvas(wrap, { backgroundColor: '#ffffff', scale: 2 }).then(function (canvas) {
-    document.body.removeChild(wrap);
-    return canvas;
-  }).catch(function (err) {
-    if (wrap.parentNode) document.body.removeChild(wrap);
-    throw err;
+  // Mesure de toutes les planches
+  var items = cells.map(function (cell, i) {
+    var zones = cell.pages.length === 1
+      ? [{ zone: 'single', w: cw - 2 * PAD, page: cell.pages[0] }]
+      : (function () {
+          var side = (cw - 2 * PAD - 2 * ZGAP - BOTH_W) / 2;
+          return [
+            { zone: 'left', w: side, page: cell.pages[0] },
+            { zone: 'both', w: BOTH_W, page: null },
+            { zone: 'right', w: side, page: cell.pages[1] }
+          ];
+        })();
+    var maxZoneH = 14;
+    zones.forEach(function (z) {
+      z.cards = (byLoc[i + '|' + z.zone] || []).map(function (c) {
+        return { card: c, m: measure(c, z.w - 2) };
+      });
+      z.h = 2 + z.cards.reduce(function (acc, e) { return acc + e.m.h + 1; }, 0);
+      maxZoneH = Math.max(maxZoneH, z.h);
+    });
+    return { cell: cell, i: i, zones: zones, zoneH: maxZoneH, h: PAD + BAR_H + 1 + maxZoneH + FOOT_H + PAD };
   });
-}
 
-function buildPdfFromCanvas(canvas) {
-  var pdf = new jspdf.jsPDF({
-    orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-    unit: 'px',
-    format: [canvas.width, canvas.height]
-  });
-  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
-  return pdf;
+  // En-tête (titre, dates, remplissage)
+  var y = M + 6;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor('#172b4d');
+  doc.text(clean(currentMeta.title) || 'Chemin de fer', M, y);
+  var parts = [];
+  if (currentMeta.closingDate) parts.push('Bouclage : ' + formatDate(currentMeta.closingDate));
+  if (currentMeta.distributionDate) parts.push('Distribution : ' + formatDate(currentMeta.distributionDate));
+  if (fillStatEl && fillStatEl.textContent) parts.push('Remplissage : ' + fillStatEl.textContent);
+  if (parts.length) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor('#5e6c84');
+    y += 6; doc.text(parts.join('   |   '), M, y);
+  }
+  y += 6;
+
+  // Lignes de planches
+  for (var r = 0; r < items.length; r += cols) {
+    var row = items.slice(r, r + cols);
+    var rowH = Math.max.apply(null, row.map(function (it) { return it.h; }));
+    if (y + rowH > H - M - 6 && y > M + 30) { doc.addPage(); y = M; }
+    row.forEach(function (it, k) {
+      var x = M + k * (cw + GAP);
+      doc.setFillColor('#ffffff'); doc.setDrawColor('#dfe1e6'); doc.setLineWidth(0.2);
+      doc.roundedRect(x, y, cw, rowH, 1.2, 1.2, 'FD');
+
+      var rub = currentRubriques[String(it.i)] || {};
+      var barColor = rub.color || '#eef0f3';
+      doc.setFillColor(barColor); doc.roundedRect(x + PAD, y + PAD, cw - 2 * PAD, BAR_H, 1, 1, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor('#5e6c84');
+      doc.text(it.cell.label, x + PAD + 1.2, y + PAD + BAR_H / 2, { baseline: 'middle' });
+      var lw = doc.getTextWidth(it.cell.label);
+      if (rub.title) {
+        doc.setFontSize(7.5); doc.setTextColor(cdfTextOn(barColor));
+        var tt = clean(rub.title), maxT = cw - 2 * PAD - lw - 5;
+        while (tt.length > 1 && doc.getTextWidth(tt) > maxT) tt = tt.slice(0, -1);
+        doc.text(tt, x + PAD + 1.2 + lw + 2, y + PAD + BAR_H / 2, { baseline: 'middle' });
+      }
+
+      var zx = x + PAD, zy = y + PAD + BAR_H + 1;
+      it.zones.forEach(function (z) {
+        doc.setLineWidth(0.15);
+        if (z.zone === 'both') {
+          doc.setFillColor('#eef3fb'); doc.setDrawColor('#8fb3dc'); doc.setLineDashPattern([0.8, 0.8], 0);
+        } else {
+          doc.setFillColor('#fafbfc'); doc.setDrawColor('#dfe1e6'); doc.setLineDashPattern([], 0);
+        }
+        doc.roundedRect(zx, zy, z.w, it.zoneH, 0.8, 0.8, 'FD');
+        doc.setLineDashPattern([], 0);
+        var cy = zy + 1;
+        z.cards.forEach(function (e) {
+          drawCard(e.card, e.m, zx + 1, cy, z.w - 2);
+          cy += e.m.h + 1;
+        });
+        if (z.page) {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(5.5); doc.setTextColor('#97a0af');
+          doc.text('P.' + z.page, zx + z.w / 2, zy + it.zoneH + FOOT_H / 2, { align: 'center', baseline: 'middle' });
+        }
+        zx += z.w + ZGAP;
+      });
+    });
+    y += rowH + GAP;
+  }
+
+  var n = doc.internal.getNumberOfPages();
+  for (var i = 1; i <= n; i++) {
+    doc.setPage(i);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor('#8993a4');
+    doc.text('Page ' + i + ' / ' + n, W - M, H - 5, { align: 'right' });
+  }
+  return doc;
 }
 
 exportBtn.addEventListener('click', function () {
   setStatus('Génération du PDF…');
-  generateGridCanvas().then(function (canvas) {
-    var pdf = buildPdfFromCanvas(canvas);
-    var filename = (currentMeta.title ? currentMeta.title.replace(/[^a-z0-9\-_]+/gi, '_') : 'chemin-de-fer') + '.pdf';
-    pdf.save(filename);
-    setStatus('PDF exporté');
-  }).catch(function (err) {
-    console.error(err);
-    setStatus('Erreur export PDF');
-  });
+  setTimeout(function () {
+    try {
+      var doc = exportPdf();
+      var filename = (currentMeta.title ? currentMeta.title.replace(/[^a-z0-9\-_]+/gi, '_') : 'chemin-de-fer') + '.pdf';
+      doc.save(filename);
+      setStatus('PDF exporté');
+    } catch (err) {
+      console.error(err);
+      setStatus('Erreur export PDF');
+    }
+  }, 30);
 });
 
 // --- Nouveau chemin de fer (archivage figé dans l'historique + reset) ---

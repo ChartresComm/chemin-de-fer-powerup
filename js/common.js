@@ -160,14 +160,27 @@ function cdfColorToHex(name) {
 }
 
 // Couleur stable (non liée à Trello, qui n'a pas de couleur native pour les listes)
-// générée à partir d'une chaîne — utilisée pour colorer la puce de liste sur les cartes.
+// générée à partir d'une chaîne — renvoie un code hexadécimal (#rrggbb), utilisable
+// aussi bien à l'écran que dans le PDF.
 function cdfHashColor(str) {
   var hash = 0;
   for (var i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-  var hue = Math.abs(hash) % 360;
-  return 'hsl(' + hue + ', 55%, 45%)';
+  var h = Math.abs(hash) % 360, s = 0.55, l = 0.45;
+  var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+  var rgb = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return '#' + rgb.map(function (v) {
+    return ('0' + Math.round((v + m) * 255).toString(16)).slice(-2);
+  }).join('');
+}
+
+// Couleur de texte lisible (sombre ou blanche) sur un fond hexadécimal.
+function cdfTextOn(hex) {
+  var n = parseInt(String(hex).slice(1), 16);
+  if (isNaN(n)) return '#ffffff';
+  var l = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return l > 150 ? '#172b4d' : '#ffffff';
 }
 
 // Normalise un nom (minuscules, sans accents) pour des comparaisons fiables
@@ -185,11 +198,14 @@ function cdfNormalizeName(s) {
 // pas de couleur native aux listes). Toute liste absente de cette palette reçoit
 // automatiquement une couleur générée (cdfHashColor), stable mais non choisie à la main.
 var CDF_LIST_COLORS = {
-  'a trier': '#dcb35c',
-  'en redaction': '#5aa9e6',
-  'finalisee': '#7cb342',
-  'mise en page': '#8e6fce',
-  'marbre': '#8c8c8c'
+  'a lancer': '#f2d600',          // jaune
+  'a trier': '#f2d600',           // jaune (ancien nom de la liste)
+  'en redaction': '#5bc0eb',      // bleu clair
+  'a mettre en page': '#8cc63f',  // vert pomme
+  'mise en page': '#8cc63f',      // vert pomme (ancien nom)
+  'finalise': '#b78fe0',          // violet lila
+  'finalisee': '#b78fe0',         // violet lila
+  'marbre': '#8c8c8c'             // gris neutre
 };
 
 function cdfListColor(listName) {
