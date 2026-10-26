@@ -58,7 +58,7 @@ Si c'est déjà fait lors d'une version précédente, il n'y a rien à refaire i
 1. Va sur https://trello.com/power-ups/admin
 2. Renseigne l'URL de l'iframe (connector) : `https://<ton-url-github-pages>/index.html`
 3. Les capacités (`board-buttons`, `show-settings`) sont déclarées automatiquement par le code — rien à faire de plus dans l'admin.
-4. Pour le champ **"Icône"** de la fiche Power-Up (144×144, noire), utilise le fichier `icons/icon-144.png` inclus dans cette archive. Utilise bien son URL en `https://` une fois hébergé sur GitHub Pages (jamais en `http://`).
+4. Pour le champ **"Icône"** de la fiche Power-Up (144×144, noire), utilise le fichier `icons/icon-black-144.png` inclus dans cette archive. Utilise bien son URL en `https://` une fois hébergé sur GitHub Pages (jamais en `http://`).
 
 ## Étape 3 — Activer le Power-Up sur un tableau
 
@@ -87,5 +87,5 @@ js/common.js         Lecture/écriture du stockage partagé + modèles
 js/chemin-de-fer.js  Rendu de la grille + glisser-déposer + export + historique
 js/settings.js       Logique des réglages
 css/style.css        Styles
-icons/               Icônes (à personnaliser)
+icons/               Icônes : icon-black / icon-white / icon-color en 144, 32 et 16 px
 ```

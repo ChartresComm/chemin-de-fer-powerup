@@ -3,7 +3,7 @@
   "name": "Chemin de fer",
   "details": "Organisez visuellement le sommaire de vos publications (chemin de fer / flatplan) directement depuis votre tableau Trello.",
   "icon": {
-    "url": "./icons/icon-144.png"
+    "url": "./icons/icon-black-144.png"
   },
   "capabilities": [
     "board-buttons",
