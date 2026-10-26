@@ -222,3 +222,26 @@ function cdfListColor(listName) {
   var key = cdfNormalizeName(listName);
   return CDF_LIST_COLORS[key] || cdfHashColor(listName || key);
 }
+
+// Supprime les instantanés "orphelins" (laissés par d'anciens essais d'archivage ayant
+// échoué à mi-chemin) : ils occupent de la place sans apparaître dans l'historique.
+// Renvoie le nombre de caractères utilisés ensuite (pour diagnostic).
+function cdfCleanOrphans(t, history) {
+  return t.getAll().then(function (all) {
+    var shared = (all && all.board && all.board.shared) || {};
+    var known = {};
+    (history || []).forEach(function (h) { known['cdfIssue_' + h.id] = true; });
+    var orphans = Object.keys(shared).filter(function (k) {
+      return k.indexOf('cdfIssue_') === 0 && !known[k];
+    });
+    return Promise.all(orphans.map(function (k) {
+      return t.remove('board', 'shared', k).catch(function () {});
+    })).then(function () {
+      var used = 0;
+      Object.keys(shared).forEach(function (k) {
+        if (orphans.indexOf(k) === -1) used += k.length + JSON.stringify(shared[k]).length;
+      });
+      return { removed: orphans.length, used: used };
+    });
+  }).catch(function () { return { removed: 0, used: 0 }; });
+}

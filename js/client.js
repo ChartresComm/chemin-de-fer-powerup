@@ -9,8 +9,8 @@
 // et non par rapport à notre hébergement GitHub Pages -> icône introuvable,
 // sans erreur console (juste le texte "CDF" reste visible, sans image).
 var ICON = {
-  dark: 'https://chartrescomm.github.io/chemin-de-fer-powerup/icons/icon-white-16.png',
-  light: 'https://chartrescomm.github.io/chemin-de-fer-powerup/icons/icon-color-16.png'
+  dark: 'https://chartrescomm.github.io/chemin-de-fer-powerup/icons/icon-white-16.png?v=2',
+  light: 'https://chartrescomm.github.io/chemin-de-fer-powerup/icons/icon-color-16.png?v=2'
 };
 
 TrelloPowerUp.initialize({

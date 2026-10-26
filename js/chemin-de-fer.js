@@ -572,6 +572,7 @@ function init() {
     return loadCards();
   }).then(function () {
     fullRender();
+    cdfCleanOrphans(t, currentHistory);
   }).catch(function (err) {
     console.error('Erreur au chargement du chemin de fer :', err);
     setStatus('Erreur au chargement — voir la console');
@@ -880,7 +881,14 @@ function storeArchive(entry, snapshot) {
       return attempt(false).then(function (r) { r.pruned = pruned; r.light = true; return r; });
     });
   }
-  return run(0);
+  return cdfCleanOrphans(t, currentHistory).then(function () {
+    return run(0);
+  }).catch(function (err) {
+    if (!isQuotaError(err)) throw err;
+    // Même sans historique la limite est atteinte : le PDF a déjà été téléchargé,
+    // on poursuit la remise à zéro (qui libère de la place) sans archive interne.
+    return { pruned: 0, skipped: true };
+  });
 }
 
 function archiveCurrentAndReset(newTitle, base) {
@@ -936,12 +944,15 @@ function archiveCurrentAndReset(newTitle, base) {
     currentLayout = { assignments: {} };
     currentMeta = { title: newTitle, closingDate: '', distributionDate: '' };
 
-    return Promise.all([
-      cdfSaveConfig(t, currentConfig),
-      cdfSaveLayout(t, currentLayout),
-      cdfSaveRubriques(t, currentRubriques),
-      cdfSaveMeta(t, currentMeta)
-    ]);
+    // En série et en commençant par la disposition (la plus volumineuse) : chaque
+    // écriture ne fait que réduire le total, donc ne peut pas dépasser la limite.
+    return cdfSaveLayout(t, currentLayout).then(function () {
+      return cdfSaveRubriques(t, currentRubriques);
+    }).then(function () {
+      return cdfSaveMeta(t, currentMeta);
+    }).then(function () {
+      return cdfSaveConfig(t, currentConfig);
+    });
   }).then(function () {
     populateMetaInputs();
     return loadCards();
@@ -949,7 +960,8 @@ function archiveCurrentAndReset(newTitle, base) {
     fullRender();
     newOverlay.classList.remove('cdf-overlay-visible');
     var note = '';
-    if (archiveResult && archiveResult.light) note = ' — grille trop volumineuse pour l’historique : seul le PDF fait foi';
+    if (archiveResult && archiveResult.skipped) note = ' — historique plein : seul le PDF téléchargé fait foi';
+    else if (archiveResult && archiveResult.light) note = ' — grille trop volumineuse pour l’historique : seul le PDF fait foi';
     else if (archiveResult && archiveResult.pruned) note = ' — ' + archiveResult.pruned + ' ancienne(s) archive(s) supprimée(s) (limite Trello)';
     setStatus('Nouveau chemin de fer créé' + note);
   }).catch(function (err) {
